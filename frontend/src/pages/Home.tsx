@@ -1,271 +1,127 @@
-import AccessTimeOutlinedIcon from '@mui/icons-material/AccessTimeOutlined';
 import BoltOutlinedIcon from '@mui/icons-material/BoltOutlined';
-import DescriptionOutlinedIcon from '@mui/icons-material/DescriptionOutlined';
+import FormatColorTextOutlinedIcon from '@mui/icons-material/FormatColorTextOutlined';
 import GroupsOutlinedIcon from '@mui/icons-material/GroupsOutlined';
-import OpenInNewOutlinedIcon from '@mui/icons-material/OpenInNewOutlined';
-import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined';
-import { useForm } from 'react-hook-form';
-import {
-  createDocumentSchema,
-  type createDocumentFormData,
-} from '../utils/zod/create-document-schema';
-import { zodResolver } from '@hookform/resolvers/zod';
-import {
-  joinExistingDocumentSchema,
-  type joinExistingDocumentFormData,
-} from '../utils/zod/join-exisiting-document-schema';
-
-const recentDocuments = [
-  {
-    title: 'test document 1',
-    id: '724553919',
-    owner: 'vinay',
-  },
-];
+import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
+import { Link } from '@tanstack/react-router';
+import { Navbar } from '../components/Navbar';
 
 const features = [
   {
-    icon: DescriptionOutlinedIcon,
-    title: 'Rich Text Editor',
-    description: 'Full-featured editing with formatting, tables, and media',
+    icon: GroupsOutlinedIcon,
+    title: 'Live Multi-Cursor',
+    description:
+      'See exactly where your teammates are editing in real time. Every keystroke appears instantly for all collaborators.',
   },
   {
-    icon: GroupsOutlinedIcon,
-    title: 'Real-time Collaboration',
-    description: 'See changes instantly as your team edits together',
+    icon: FormatColorTextOutlinedIcon,
+    title: 'Rich Formatting',
+    description:
+      'Full formatting toolbar — headings, bullet lists, inline code blocks, bold, italic, and more for structured content.',
   },
   {
     icon: BoltOutlinedIcon,
-    title: 'Fast & Secure',
-    description: 'PIN-protected documents with instant sync',
+    title: 'Instant Sync',
+    description:
+      'Changes propagate in milliseconds. No refresh, no lag — your team always works from the same live document.',
+  },
+  {
+    icon: LockOutlinedIcon,
+    title: 'Secure Rooms',
+    description:
+      'PIN-protected documents keep your code private. Share only with people who have the ID and PIN.',
   },
 ];
 
 export const Home = () => {
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-  } = useForm<createDocumentFormData>({
-    resolver: zodResolver(createDocumentSchema),
-  });
-
-  const {
-    register: joinRegister,
-    handleSubmit: handleJoinSubmit,
-    formState: { errors: joinErrors },
-  } = useForm<joinExistingDocumentFormData>({
-    resolver: zodResolver(joinExistingDocumentSchema),
-  });
-
-  const onCreateDocument = (data: createDocumentFormData) => {
-    console.log(data);
-  };
-
-  const onJoinDocument = (data: joinExistingDocumentFormData) => {
-    console.log(data);
-  };
-
   return (
-    <div className="min-h-screen bg-white text-slate-950">
-      <div className="mx-auto w-full max-w-198 px-3 pb-4 pt-17">
-        <header className="mb-5 text-center">
-          <h1 className="mb-1.5 text-5xl font-extrabold leading-[1.08] text-gray-900">
-            CollabDocs
-          </h1>
-          <p className="mb-2 text-base leading-6 text-slate-950">
-            Real-time collaborative document editing, simplified
-          </p>
-          <p className="text-sm leading-[1.45] text-slate-950">
-            Edit PDF, Word, and more with real-time collaboration - completely
-            free
-          </p>
-        </header>
+    <div className="min-h-screen bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100 transition-colors">
+      <Navbar />
 
-        <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-2">
-          {/* ── Create New Document ── */}
-          <div className="min-h-71 rounded border border-slate-200 p-3">
-            <h2 className="mb-1 text-xl font-bold text-slate-950">
-              Create New Document
-            </h2>
-            <p className="mb-6 text-xs text-slate-950">
-              Start a new collaborative document
-            </p>
-
-            <form
-              className="grid gap-4"
-              onSubmit={handleSubmit(onCreateDocument)}
-            >
-              <div>
-                <label
-                  className="mb-1 block text-xs font-semibold text-slate-950"
-                  htmlFor="username"
-                >
-                  Your Name
-                </label>
-                <input
-                  id="username"
-                  placeholder="Enter your name..."
-                  {...register('username')}
-                  className="h-8 w-full rounded border border-slate-300 px-3 text-xs shadow-sm outline-none transition focus:border-slate-900"
-                />
-                {errors.username && (
-                  <p className="mt-1 text-xs text-red-500">
-                    {errors?.username?.message}
-                  </p>
-                )}
-              </div>
-
-              <div>
-                <label
-                  className="mb-1 block text-xs font-semibold text-slate-950"
-                  htmlFor="documentTitle"
-                >
-                  Document Title
-                </label>
-                <input
-                  id="documentTitle"
-                  placeholder="Enter document title..."
-                  {...register('title')}
-                  className="h-8 w-full rounded border border-slate-300 px-3 text-xs shadow-sm outline-none transition focus:border-slate-900"
-                />
-                {errors?.title && (
-                  <p className="mt-1 text-xs text-red-500">
-                    {errors?.title?.message}
-                  </p>
-                )}
-              </div>
-
-              <button
-                type="submit"
-                className="h-8 w-full rounded border border-slate-200 bg-white text-xs font-semibold text-slate-950 shadow-sm transition hover:bg-slate-50"
-              >
-                Create Document
-              </button>
-            </form>
-          </div>
-
-          {/* ── Join Existing Document ── */}
-          <div className="min-h-71 rounded border border-slate-200 p-3">
-            <h2 className="mb-1 text-xl font-bold text-slate-950">
-              Join Existing Document
-            </h2>
-            <p className="mb-6 text-xs text-slate-950">
-              Enter document ID and PIN to collaborate
-            </p>
-
-            <form
-              className="grid gap-4"
-              onSubmit={handleJoinSubmit(onJoinDocument)}
-            >
-              <div>
-                <label
-                  className="mb-1 block text-xs font-semibold text-slate-950"
-                  htmlFor="documentId"
-                >
-                  Document ID
-                </label>
-                <input
-                  id="documentId"
-                  placeholder="9-digit ID"
-                  {...joinRegister('documentId')}
-                  className="h-8 w-full rounded border border-slate-300 px-3 text-xs shadow-sm outline-none transition focus:border-slate-900"
-                />
-                {joinErrors?.documentId && (
-                  <p className="mt-1 text-xs text-red-500">
-                    {joinErrors?.documentId?.message}
-                  </p>
-                )}
-              </div>
-
-              <div>
-                <label
-                  className="mb-1 block text-xs font-semibold text-slate-950"
-                  htmlFor="documentPin"
-                >
-                  PIN
-                </label>
-                <div className="relative">
-                  <input
-                    id="documentPin"
-                    type="number"
-                    placeholder="4-digit PIN"
-                    {...joinRegister('documentPin')}
-                    className="h-8 w-full rounded border border-slate-300 px-3 pr-9 text-xs shadow-sm outline-none transition focus:border-slate-900"
-                  />
-                  <button
-                    type="button"
-                    className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-700"
-                  >
-                    <VisibilityOutlinedIcon fontSize="small" />
-                  </button>
-                </div>
-                {joinErrors.documentPin && (
-                  <p className="mt-1 text-xs text-red-500">
-                    {joinErrors?.documentPin?.message}
-                  </p>
-                )}
-              </div>
-
-              <button
-                type="submit"
-                className="h-8 w-full rounded border border-slate-200 bg-white text-xs font-semibold text-slate-950 shadow-sm transition hover:bg-slate-50"
-              >
-                Continue
-              </button>
-            </form>
-          </div>
+      {/* Hero */}
+      <section className="mx-auto max-w-5xl px-4 pb-20 pt-24 text-center">
+        <div className="mx-auto mb-5 inline-flex items-center gap-2 rounded-full border border-blue-200 dark:border-blue-900 bg-blue-50 dark:bg-blue-950/60 px-3.5 py-1 text-xs font-medium text-blue-700 dark:text-blue-300">
+          <span className="h-1.5 w-1.5 rounded-full bg-blue-500 animate-pulse" />
+          Real-time collaboration
         </div>
 
-        {/* ── Recent Documents ── */}
-        <section className="mb-3">
-          <div className="mb-2 flex items-center justify-center gap-1">
-            <AccessTimeOutlinedIcon fontSize="small" />
-            <h2 className="text-base font-bold text-slate-950">
-              Recent Documents
-            </h2>
-          </div>
+        <h1 className="mb-5 text-5xl font-extrabold leading-[1.1] tracking-tight text-gray-900 dark:text-gray-50 sm:text-6xl">
+          Code Together.
+          <br />
+          <span className="text-blue-600 dark:text-blue-400">Ship Faster.</span>
+        </h1>
 
-          <div className="grid max-w-124 grid-cols-1 gap-1 sm:grid-cols-2">
-            {recentDocuments.map((document) => (
-              <div
-                key={document.id}
-                className="relative min-h-20 rounded border border-slate-200 p-2"
-              >
-                <p className="mb-1 text-sm font-bold text-slate-950">
-                  {document.title}
-                </p>
-                <p className="mb-1 text-xs text-slate-950">ID: {document.id}</p>
-                <p className="text-xs text-slate-950">{document.owner}</p>
-                <button
-                  type="button"
-                  className="absolute right-2 top-3 text-slate-950"
-                >
-                  <OpenInNewOutlinedIcon fontSize="small" />
-                </button>
-              </div>
-            ))}
-          </div>
-        </section>
+        <p className="mx-auto mb-8 max-w-lg text-lg leading-relaxed text-gray-500 dark:text-gray-400">
+          A collaborative workspace for code and documents. Multiple people edit
+          simultaneously — like Google Docs, purpose-built for code sharing.
+        </p>
 
-        {/* ── Features ── */}
-        <section className="grid grid-cols-1 gap-4 text-center md:grid-cols-3">
+        <div className="flex flex-col items-center justify-center gap-3 sm:flex-row">
+          <Link
+            to="/register"
+            className="flex h-11 items-center rounded-md bg-blue-600 dark:bg-blue-500 px-7 text-sm font-semibold text-white hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors no-underline"
+          >
+            Get Started — It's Free
+          </Link>
+          <Link
+            to="/login"
+            className="flex h-11 items-center rounded-md border border-gray-300 dark:border-gray-700 px-7 text-sm font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors no-underline"
+          >
+            Sign In
+          </Link>
+        </div>
+      </section>
+
+      {/* Features */}
+      <section className="mx-auto max-w-5xl px-4 pb-24">
+        <h2 className="mb-2 text-center text-2xl font-bold text-gray-900 dark:text-gray-100">
+          Everything you need to collaborate on code
+        </h2>
+        <p className="mb-10 text-center text-sm text-gray-500 dark:text-gray-400">
+          One shared workspace. No setup. Start editing with your team in
+          seconds.
+        </p>
+
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
           {features.map((feature) => {
-            const FeatureIcon = feature.icon;
+            const Icon = feature.icon;
             return (
-              <div key={feature.title}>
-                <FeatureIcon className="mb-2 text-[43px]" />
-                <h3 className="mb-2 text-base font-bold text-slate-950">
+              <div
+                key={feature.title}
+                className="rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 p-5 transition-colors"
+              >
+                <div className="mb-3 inline-flex h-9 w-9 items-center justify-center rounded-lg bg-blue-100 dark:bg-blue-950 text-blue-600 dark:text-blue-400">
+                  <Icon fontSize="small" />
+                </div>
+                <h3 className="mb-2 text-sm font-semibold text-gray-900 dark:text-gray-100">
                   {feature.title}
                 </h3>
-                <p className="mx-auto max-w-60 text-xs leading-[1.35] text-slate-950">
+                <p className="text-xs leading-relaxed text-gray-500 dark:text-gray-400">
                   {feature.description}
                 </p>
               </div>
             );
           })}
-        </section>
-      </div>
+        </div>
+      </section>
+
+      {/* CTA Banner */}
+      <section className="border-t border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-900 transition-colors">
+        <div className="mx-auto max-w-5xl px-4 py-16 text-center">
+          <h2 className="mb-2 text-2xl font-bold text-gray-900 dark:text-gray-100">
+            Start collaborating today
+          </h2>
+          <p className="mb-7 text-sm text-gray-500 dark:text-gray-400">
+            No credit card required. Create a document, share the ID and PIN,
+            and your team is in.
+          </p>
+          <Link
+            to="/register"
+            className="inline-flex h-10 items-center rounded-md bg-blue-600 dark:bg-blue-500 px-7 text-sm font-semibold text-white hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors no-underline"
+          >
+            Create Free Account
+          </Link>
+        </div>
+      </section>
     </div>
   );
 };

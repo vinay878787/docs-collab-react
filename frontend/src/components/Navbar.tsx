@@ -1,0 +1,51 @@
+import CodeIcon from '@mui/icons-material/Code';
+import DarkModeOutlinedIcon from '@mui/icons-material/DarkModeOutlined';
+import LightModeOutlinedIcon from '@mui/icons-material/LightModeOutlined';
+import { Link } from '@tanstack/react-router';
+import { useTheme } from '../context/ThemeContext';
+
+export const Navbar = () => {
+  const { isDark, toggleTheme } = useTheme();
+
+  return (
+    <nav className="sticky top-0 z-50 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-950 transition-colors">
+      <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
+        <Link
+          to="/"
+          className="flex items-center gap-2 text-gray-900 dark:text-gray-100 no-underline"
+        >
+          <CodeIcon className="text-blue-600 dark:text-blue-400 text-xl!" />
+          <span className="text-lg font-bold tracking-tight">CodeCollab</span>
+        </Link>
+
+        <div className="flex items-center gap-2">
+          <button
+            onClick={toggleTheme}
+            className="flex h-8 w-8 items-center justify-center rounded text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+            aria-label="Toggle theme"
+          >
+            {isDark ? (
+              <LightModeOutlinedIcon fontSize="small" />
+            ) : (
+              <DarkModeOutlinedIcon fontSize="small" />
+            )}
+          </button>
+
+          <Link
+            to="/login"
+            className="flex h-8 items-center rounded border border-gray-300 dark:border-gray-700 px-3 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors no-underline"
+          >
+            Sign In
+          </Link>
+
+          <Link
+            to="/register"
+            className="flex h-8 items-center rounded bg-blue-600 dark:bg-blue-500 px-3 text-sm font-medium text-white hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors no-underline"
+          >
+            Get Started
+          </Link>
+        </div>
+      </div>
+    </nav>
+  );
+};
