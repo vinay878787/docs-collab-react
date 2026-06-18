@@ -1,17 +1,27 @@
-import express, { Request, Response } from 'express';
+import express from 'express';
+import { connectToDB } from './db/db';
 
 const app = express();
-
 app.use(express.json());
+app.disable('x-powered-by');
 
-app.get('/', (req: Request, res: Response) => {
-  res.json({
-    message: 'Hello TypeScript + Express',
+const PORT = process.env.PORT;
+
+app.get('/health', (req, res) => {
+  res.status(200).json({ message: 'Server is healthy' });
+});
+
+const startServer = async () => {
+  app.listen(PORT, () => {
+    console.log(`http://localhost:${PORT}`);
   });
-});
 
-const PORT = 3000;
+  try {
+    await connectToDB();
+  } catch (error) {
+    console.error('Failed to connect to MongoDB:', error);
+    process.exit(1);
+  }
+};
 
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
+startServer();
