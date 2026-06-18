@@ -17,6 +17,7 @@
   "dependencies": {
     "@docs-collab/shared": "*",
     "bcrypt-ts": "^8.0.1",
+    "cors": "^2.8.6",
     "express": "^5.2.1",
     "google-auth-library": "^10.7.0",
     "jsonwebtoken": "^9.0.3",
@@ -25,6 +26,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
     "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^25.9.3",

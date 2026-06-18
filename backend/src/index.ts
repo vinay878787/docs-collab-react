@@ -1,9 +1,17 @@
 import express from 'express';
 import { connectToDB } from './db/db';
 import authRouter from './routes/auth';
+import cors from 'cors';
 
 const app = express();
+
+const corsOptions = {
+  origin: 'http://localhost:5173',
+  optionsSuccessStatus: 200,
+};
+
 app.disable('x-powered-by');
+app.use(cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use('/api/v1/auth', authRouter);

@@ -9,6 +9,8 @@ import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined';
 import VisibilityOffOutlinedIcon from '@mui/icons-material/VisibilityOffOutlined';
 import { loginSchema, type LoginFormData } from '../utils/zod/login-schema';
 import { useTheme } from '../context/ThemeContext';
+import { useLogin } from '@/hooks/auth';
+import { isAxiosError } from 'axios';
 
 const GoogleIcon = () => (
   <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true">
@@ -34,6 +36,7 @@ const GoogleIcon = () => (
 export const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   const { isDark, toggleTheme } = useTheme();
+  const loginMutation = useLogin();
 
   const {
     register,
@@ -43,8 +46,17 @@ export const Login = () => {
     resolver: zodResolver(loginSchema),
   });
 
-  const onSubmit = (data: LoginFormData) => {
-    console.log(data);
+  const onSubmit = async (data: LoginFormData) => {
+    try {
+      const response = await loginMutation.mutateAsync(data);
+      localStorage.setItem('token', response.token);
+    } catch (error: unknown) {
+      if (isAxiosError(error)) {
+        console.error(error?.response?.data?.message ?? 'Login failed');
+      } else {
+        console.error('An unexpected error occurred');
+      }
+    }
   };
 
   const handleGoogleLogin = () => {

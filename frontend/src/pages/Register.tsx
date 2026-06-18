@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Link } from '@tanstack/react-router';
+import { isAxiosError } from 'axios';
 import CodeIcon from '@mui/icons-material/Code';
 import DarkModeOutlinedIcon from '@mui/icons-material/DarkModeOutlined';
 import LightModeOutlinedIcon from '@mui/icons-material/LightModeOutlined';
@@ -12,6 +13,7 @@ import {
   type RegisterFormData,
 } from '../utils/zod/register-schema';
 import { useTheme } from '../context/ThemeContext';
+import { useRegister } from '@/hooks/auth';
 
 const GoogleIcon = () => (
   <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true">
@@ -37,6 +39,7 @@ const GoogleIcon = () => (
 export const Register = () => {
   const [showPassword, setShowPassword] = useState(false);
   const { isDark, toggleTheme } = useTheme();
+  const registerMutation = useRegister();
 
   const {
     register,
@@ -46,15 +49,22 @@ export const Register = () => {
     resolver: zodResolver(registerSchema),
   });
 
-  const onSubmit = (data: RegisterFormData) => {
-    console.log(data);
+  const onSubmit = async (data: RegisterFormData) => {
+    try {
+      const response = await registerMutation.mutateAsync(data);
+      localStorage.setItem('token', response.token);
+    } catch (error: unknown) {
+      if (isAxiosError(error)) {
+        console.error(error.response?.data?.message ?? 'Registration failed');
+      } else {
+        console.error('An unexpected error occurred');
+      }
+    }
   };
 
   const handleGoogleRegister = () => {
     console.log('Google register');
   };
-
-  const handleRegister = () => {};
 
   return (
     <div className="min-h-screen bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100 transition-colors">
@@ -194,7 +204,6 @@ export const Register = () => {
               <button
                 type="submit"
                 className="h-9 w-full rounded-md bg-blue-600 dark:bg-blue-500 text-sm font-semibold text-white hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors"
-                onClick={handleRegister}
               >
                 Create Account
               </button>
