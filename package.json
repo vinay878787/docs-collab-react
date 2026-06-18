@@ -3,7 +3,8 @@
   "private": true,
   "workspaces": [
     "frontend",
-    "backend"
+    "backend",
+    "shared"
   ],
   "version": "1.0.0",
   "type": "module",
@@ -32,7 +33,6 @@
     "@commitlint/cli": "^21.0.2",
     "@commitlint/config-conventional": "^21.0.2",
     "@eslint/js": "^10.0.1",
-    "@tanstack/router-plugin": "^1.168.18",
     "concurrently": "^10.0.3",
     "eslint": "^10.5.0",
     "eslint-config-prettier": "^10.1.8",
@@ -43,9 +43,5 @@
     "lint-staged": "^17.0.7",
     "prettier": "^3.8.4",
     "typescript-eslint": "^8.61.0"
-  },
-  "dependencies": {
-    "@tanstack/react-router": "^1.170.15",
-    "@tanstack/react-router-devtools": "^1.167.0"
   }
 }

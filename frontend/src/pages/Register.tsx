@@ -36,7 +36,6 @@ const GoogleIcon = () => (
 
 export const Register = () => {
   const [showPassword, setShowPassword] = useState(false);
-  const [showConfirm, setShowConfirm] = useState(false);
   const { isDark, toggleTheme } = useTheme();
 
   const {
@@ -54,6 +53,8 @@ export const Register = () => {
   const handleGoogleRegister = () => {
     console.log('Google register');
   };
+
+  const handleRegister = () => {};
 
   return (
     <div className="min-h-screen bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100 transition-colors">
@@ -94,7 +95,6 @@ export const Register = () => {
           </div>
 
           <div className="rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-6 shadow-sm">
-            {/* Google first */}
             <button
               type="button"
               onClick={handleGoogleRegister}
@@ -113,6 +113,26 @@ export const Register = () => {
             </div>
 
             <form onSubmit={handleSubmit(onSubmit)} className="grid gap-4">
+              <div className="relative">
+                <label
+                  htmlFor="username"
+                  className="mb-1.5 block text-xs font-semibold text-gray-700 dark:text-gray-300"
+                >
+                  Username
+                </label>
+                <input
+                  id="username"
+                  type="text"
+                  placeholder="Username"
+                  {...register('username')}
+                  className="h-9 w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 text-sm text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500 shadow-sm outline-none transition focus:border-blue-500 dark:focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20"
+                />
+                {errors.username && (
+                  <p className="mt-1 text-xs text-red-500 dark:text-red-400">
+                    {errors.username.message}
+                  </p>
+                )}
+              </div>
               <div>
                 <label
                   htmlFor="email"
@@ -171,44 +191,10 @@ export const Register = () => {
                 )}
               </div>
 
-              <div>
-                <label
-                  htmlFor="confirmPassword"
-                  className="mb-1.5 block text-xs font-semibold text-gray-700 dark:text-gray-300"
-                >
-                  Confirm Password
-                </label>
-                <div className="relative">
-                  <input
-                    id="confirmPassword"
-                    type={showConfirm ? 'text' : 'password'}
-                    placeholder="Re-enter password"
-                    {...register('confirmPassword')}
-                    className="h-9 w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 pr-9 text-sm text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500 shadow-sm outline-none transition focus:border-blue-500 dark:focus:border-blue-400 focus:ring-2 focus:ring-blue-500/20"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowConfirm((s) => !s)}
-                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
-                    aria-label={showConfirm ? 'Hide password' : 'Show password'}
-                  >
-                    {showConfirm ? (
-                      <VisibilityOffOutlinedIcon fontSize="small" />
-                    ) : (
-                      <VisibilityOutlinedIcon fontSize="small" />
-                    )}
-                  </button>
-                </div>
-                {errors.confirmPassword && (
-                  <p className="mt-1 text-xs text-red-500 dark:text-red-400">
-                    {errors.confirmPassword.message}
-                  </p>
-                )}
-              </div>
-
               <button
                 type="submit"
                 className="h-9 w-full rounded-md bg-blue-600 dark:bg-blue-500 text-sm font-semibold text-white hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors"
+                onClick={handleRegister}
               >
                 Create Account
               </button>
