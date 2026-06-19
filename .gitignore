@@ -123,3 +123,4 @@ mongodb-data/
 # Docker
 # =====================================
 docker-data/
+.txt

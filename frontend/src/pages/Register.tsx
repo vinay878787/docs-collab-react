@@ -13,7 +13,8 @@ import {
   type RegisterFormData,
 } from '../utils/zod/register-schema';
 import { useTheme } from '../context/ThemeContext';
-import { useRegister } from '@/hooks/auth';
+import { useRegister, useGoogleSignIn } from '@/hooks/auth';
+import { useGoogleLogin } from '@react-oauth/google';
 
 const GoogleIcon = () => (
   <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true">
@@ -40,6 +41,23 @@ export const Register = () => {
   const [showPassword, setShowPassword] = useState(false);
   const { isDark, toggleTheme } = useTheme();
   const registerMutation = useRegister();
+  const googleMutation = useGoogleSignIn();
+
+  const googleRegister = useGoogleLogin({
+    onSuccess: async ({ access_token }) => {
+      try {
+        const data = await googleMutation.mutateAsync(access_token);
+        localStorage.setItem('token', data.token);
+      } catch (error) {
+        if (isAxiosError(error)) {
+          console.error(
+            error.response?.data?.message ?? 'Google sign-up failed',
+          );
+        }
+      }
+    },
+    onError: () => console.error('Google sign-up failed'),
+  });
 
   const {
     register,
@@ -62,9 +80,7 @@ export const Register = () => {
     }
   };
 
-  const handleGoogleRegister = () => {
-    console.log('Google register');
-  };
+  const handleGoogleRegister = () => googleRegister();
 
   return (
     <div className="min-h-screen bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100 transition-colors">

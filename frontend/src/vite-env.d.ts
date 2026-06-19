@@ -2,7 +2,7 @@
 
 interface ImportMetaEnv {
   readonly VITE_DEV_BACKEND_URL: string;
-  // add more env variables here...
+  readonly VITE_GOOGLE_CLIENT_ID: string;
 }
 
 interface ImportMeta {

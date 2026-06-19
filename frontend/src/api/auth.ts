@@ -18,3 +18,12 @@ export const loginUser = async (
   const response = await api.post<IRegisterResponse>('/login', payload);
   return response.data;
 };
+
+export const googleSignIn = async (
+  accessToken: string,
+): Promise<IRegisterResponse> => {
+  const response = await api.post<IRegisterResponse>('/google', {
+    accessToken,
+  });
+  return response.data;
+};

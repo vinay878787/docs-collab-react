@@ -9,8 +9,9 @@ import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined';
 import VisibilityOffOutlinedIcon from '@mui/icons-material/VisibilityOffOutlined';
 import { loginSchema, type LoginFormData } from '../utils/zod/login-schema';
 import { useTheme } from '../context/ThemeContext';
-import { useLogin } from '@/hooks/auth';
+import { useLogin, useGoogleSignIn } from '@/hooks/auth';
 import { isAxiosError } from 'axios';
+import { useGoogleLogin } from '@react-oauth/google';
 
 const GoogleIcon = () => (
   <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true">
@@ -37,6 +38,23 @@ export const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   const { isDark, toggleTheme } = useTheme();
   const loginMutation = useLogin();
+  const googleMutation = useGoogleSignIn();
+
+  const googleLogin = useGoogleLogin({
+    onSuccess: async ({ access_token }) => {
+      try {
+        const data = await googleMutation.mutateAsync(access_token);
+        localStorage.setItem('token', data.token);
+      } catch (error) {
+        if (isAxiosError(error)) {
+          console.error(
+            error.response?.data?.message ?? 'Google sign-in failed',
+          );
+        }
+      }
+    },
+    onError: () => console.error('Google sign-in failed'),
+  });
 
   const {
     register,
@@ -59,9 +77,7 @@ export const Login = () => {
     }
   };
 
-  const handleGoogleLogin = () => {
-    console.log('Google login');
-  };
+  const handleGoogleLogin = () => googleLogin();
 
   return (
     <div className="min-h-screen bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100 transition-colors">

@@ -5,7 +5,7 @@ export interface IRegisterUser {
 }
 
 export interface IRegisterResponse {
-  message: string;
+  message?: string;
   token: string;
   user: {
     id: string;

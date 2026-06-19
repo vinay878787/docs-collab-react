@@ -1,10 +1,7 @@
 import { Request, Response } from 'express';
 import { hash, compare } from 'bcrypt-ts';
 import { signToken, sanitizeUsername } from '../utils/helper';
-import { OAuth2Client } from 'google-auth-library';
 import { User } from '../models/User';
-
-const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 export const registerController = async (req: Request, res: Response) => {
   try {
@@ -102,23 +99,36 @@ export const loginController = async (req: Request, res: Response) => {
 
 export const googleSignInController = async (req: Request, res: Response) => {
   try {
-    const { credential } = req.body;
+    const { accessToken } = req.body;
 
-    if (!credential) {
-      return res.status(400).json({ message: 'Google credential is required' });
+    if (!accessToken) {
+      return res
+        .status(400)
+        .json({ message: 'Google access token is required' });
     }
 
-    const ticket = await googleClient.verifyIdToken({
-      idToken: credential,
-      audience: process.env.GOOGLE_CLIENT_ID,
-    });
+    const userInfoRes = await fetch(
+      'https://www.googleapis.com/oauth2/v3/userinfo',
+      {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      },
+    );
 
-    const payload = ticket.getPayload();
-    if (!payload?.email) {
+    if (!userInfoRes.ok) {
       return res.status(401).json({ message: 'Invalid Google token' });
     }
 
-    const { email, name, picture } = payload;
+    const { email, name, picture } = (await userInfoRes.json()) as {
+      email?: string;
+      name?: string;
+      picture?: string;
+    };
+
+    if (!email) {
+      return res
+        .status(401)
+        .json({ message: 'Unable to retrieve email from Google' });
+    }
 
     let user = await User.findOne({ email: email.toLowerCase() });
 
