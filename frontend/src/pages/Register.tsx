@@ -8,10 +8,7 @@ import DarkModeOutlinedIcon from '@mui/icons-material/DarkModeOutlined';
 import LightModeOutlinedIcon from '@mui/icons-material/LightModeOutlined';
 import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined';
 import VisibilityOffOutlinedIcon from '@mui/icons-material/VisibilityOffOutlined';
-import {
-  registerSchema,
-  type RegisterFormData,
-} from '../utils/zod/register-schema';
+import { registerSchema, type RegisterFormData } from '@docs-collab/shared';
 import { useTheme } from '../context/ThemeContext';
 import { useRegister, useGoogleSignIn } from '@/hooks/auth';
 import { useGoogleLogin } from '@react-oauth/google';

@@ -7,7 +7,7 @@ import DarkModeOutlinedIcon from '@mui/icons-material/DarkModeOutlined';
 import LightModeOutlinedIcon from '@mui/icons-material/LightModeOutlined';
 import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined';
 import VisibilityOffOutlinedIcon from '@mui/icons-material/VisibilityOffOutlined';
-import { loginSchema, type LoginFormData } from '../utils/zod/login-schema';
+import { loginSchema, type LoginFormData } from '@docs-collab/shared';
 import { useTheme } from '../context/ThemeContext';
 import { useLogin, useGoogleSignIn } from '@/hooks/auth';
 import { isAxiosError } from 'axios';
