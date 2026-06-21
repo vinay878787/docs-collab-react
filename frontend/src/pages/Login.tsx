@@ -43,8 +43,7 @@ export const Login = () => {
   const googleLogin = useGoogleLogin({
     onSuccess: async ({ access_token }) => {
       try {
-        const data = await googleMutation.mutateAsync(access_token);
-        localStorage.setItem('token', data.token);
+        await googleMutation.mutateAsync(access_token);
       } catch (error) {
         if (isAxiosError(error)) {
           console.error(
@@ -66,8 +65,7 @@ export const Login = () => {
 
   const onSubmit = async (data: LoginFormData) => {
     try {
-      const response = await loginMutation.mutateAsync(data);
-      localStorage.setItem('token', response.token);
+      await loginMutation.mutateAsync(data);
     } catch (error: unknown) {
       if (isAxiosError(error)) {
         console.error(error?.response?.data?.message ?? 'Login failed');

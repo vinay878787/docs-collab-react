@@ -43,8 +43,7 @@ export const Register = () => {
   const googleRegister = useGoogleLogin({
     onSuccess: async ({ access_token }) => {
       try {
-        const data = await googleMutation.mutateAsync(access_token);
-        localStorage.setItem('token', data.token);
+        await googleMutation.mutateAsync(access_token);
       } catch (error) {
         if (isAxiosError(error)) {
           console.error(
@@ -66,8 +65,7 @@ export const Register = () => {
 
   const onSubmit = async (data: RegisterFormData) => {
     try {
-      const response = await registerMutation.mutateAsync(data);
-      localStorage.setItem('token', response.token);
+      await registerMutation.mutateAsync(data);
     } catch (error: unknown) {
       if (isAxiosError(error)) {
         console.error(error.response?.data?.message ?? 'Registration failed');

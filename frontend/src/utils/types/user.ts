@@ -4,9 +4,8 @@ export interface IRegisterUser {
   password: string;
 }
 
-export interface IRegisterResponse {
+export interface IAuthResponse {
   message?: string;
-  token: string;
   user: {
     id: string;
     username: string;

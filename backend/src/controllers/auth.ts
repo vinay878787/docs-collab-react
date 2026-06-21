@@ -3,13 +3,16 @@ import { hash, compare } from 'bcrypt-ts';
 import { signToken, sanitizeUsername } from '../utils/helper';
 import { User } from '../models/User';
 
+const COOKIE_OPTIONS = {
+  httpOnly: true,
+  secure: process.env.NODE_ENV === 'production',
+  sameSite: 'lax' as const,
+  maxAge: 7 * 24 * 60 * 60 * 1000,
+};
+
 export const registerController = async (req: Request, res: Response) => {
   try {
     const { username, email, password } = req.body;
-
-    if (!username || !email || !password) {
-      return res.status(400).json({ message: 'All fields are required' });
-    }
 
     const isUserExists = await User.findOne({ email: email.toLowerCase() });
 
@@ -28,19 +31,17 @@ export const registerController = async (req: Request, res: Response) => {
       provider: 'local',
     });
 
-    const userResponseObject = {
-      id: newUser?._id,
-      username: newUser?.username,
-      email: newUser?.email,
-      avatar: newUser?.avatar,
-    };
-
     const token = signToken(String(newUser._id));
+    res.cookie('token', token, COOKIE_OPTIONS);
 
     return res.status(201).json({
       message: 'User registered successfully',
-      token,
-      user: userResponseObject,
+      user: {
+        id: newUser._id,
+        username: newUser.username,
+        email: newUser.email,
+        avatar: newUser.avatar,
+      },
     });
   } catch (err) {
     console.error('Error registering user:', err);
@@ -52,35 +53,27 @@ export const loginController = async (req: Request, res: Response) => {
   try {
     const { email, password } = req.body;
 
-    const user = await User.findOne({
-      email: email.toLowerCase(),
-    });
+    const user = await User.findOne({ email: email.toLowerCase() });
 
     if (!user) {
-      return res.status(401).json({
-        message: 'Invalid Credentials',
-      });
+      return res.status(401).json({ message: 'Invalid Credentials' });
     }
 
     if (user.provider === 'google') {
-      return res.status(409).json({
-        message: 'Please sign in with Google',
-      });
+      return res.status(409).json({ message: 'Please sign in with Google' });
     }
 
     const isPasswordCorrect = await compare(password, user.password!);
 
     if (!isPasswordCorrect) {
-      return res.status(401).json({
-        message: 'Invalid Credentials',
-      });
+      return res.status(401).json({ message: 'Invalid Credentials' });
     }
 
     const token = signToken(String(user._id));
+    res.cookie('token', token, COOKIE_OPTIONS);
 
     return res.status(200).json({
       message: 'User logged in successfully',
-      token,
       user: {
         id: user._id,
         username: user.username,
@@ -90,10 +83,7 @@ export const loginController = async (req: Request, res: Response) => {
     });
   } catch (err) {
     console.error('Error while logging:', err);
-
-    return res.status(500).json({
-      message: 'Internal server error',
-    });
+    return res.status(500).json({ message: 'Internal server error' });
   }
 };
 
@@ -101,17 +91,9 @@ export const googleSignInController = async (req: Request, res: Response) => {
   try {
     const { accessToken } = req.body;
 
-    if (!accessToken) {
-      return res
-        .status(400)
-        .json({ message: 'Google access token is required' });
-    }
-
     const userInfoRes = await fetch(
       'https://www.googleapis.com/oauth2/v3/userinfo',
-      {
-        headers: { Authorization: `Bearer ${accessToken}` },
-      },
+      { headers: { Authorization: `Bearer ${accessToken}` } },
     );
 
     if (!userInfoRes.ok) {
@@ -140,10 +122,8 @@ export const googleSignInController = async (req: Request, res: Response) => {
         });
       }
     } else {
-      const username = sanitizeUsername(name ?? email.split('@')[0]);
-
       user = await User.create({
-        username,
+        username: sanitizeUsername(name ?? email.split('@')[0]),
         email: email.toLowerCase(),
         provider: 'google',
         avatar: picture ?? '',
@@ -151,9 +131,9 @@ export const googleSignInController = async (req: Request, res: Response) => {
     }
 
     const token = signToken(String(user._id));
+    res.cookie('token', token, COOKIE_OPTIONS);
 
-    res.status(200).json({
-      token,
+    return res.status(200).json({
       user: {
         id: user._id,
         username: user.username,
@@ -163,6 +143,11 @@ export const googleSignInController = async (req: Request, res: Response) => {
     });
   } catch (error) {
     console.error('Error with Google sign-in:', error);
-    res.status(500).json({ message: 'Internal server error' });
+    return res.status(500).json({ message: 'Internal server error' });
   }
+};
+
+export const logoutController = (_req: Request, res: Response) => {
+  res.clearCookie('token', COOKIE_OPTIONS);
+  return res.status(200).json({ message: 'Logged out successfully' });
 };
