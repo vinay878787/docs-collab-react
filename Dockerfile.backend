@@ -1,0 +1,19 @@
+FROM node:22-alpine
+WORKDIR /app
+
+# Copy workspace manifests for layer caching
+COPY package.json package-lock.json ./
+COPY backend/package.json ./backend/
+COPY frontend/package.json ./frontend/
+COPY shared/package.json ./shared/
+
+# Install all deps (including devDeps — tsx is needed at runtime
+# because @docs-collab/shared ships raw TypeScript source)
+RUN npm ci --ignore-scripts
+
+# Copy source
+COPY shared ./shared
+COPY backend ./backend
+
+EXPOSE 3000
+CMD ["npx", "tsx", "backend/src/index.ts"]

@@ -1,0 +1,31 @@
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    container_name: docs_collab_backend
+    env_file: .env
+    ports:
+      - "3001:3000"
+    restart: unless-stopped
+    networks:
+      - docs_collab_net
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+      args:
+        VITE_DEV_BACKEND_URL: ${VITE_DEV_BACKEND_URL:-http://docs.project.in}
+    container_name: docs_collab_frontend
+    ports:
+      - "8081:80"
+    restart: unless-stopped
+    depends_on:
+      - backend
+    networks:
+      - docs_collab_net
+
+networks:
+  docs_collab_net:
+    driver: bridge
