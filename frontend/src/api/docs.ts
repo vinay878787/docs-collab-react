@@ -20,13 +20,14 @@ export interface DocListItem {
   updatedAt: string;
 }
 
+//We are maintaining "" empty trailing route since axios is automatically integrating / in the end . Need to remove that.
 export const createDoc = async (title: string): Promise<DocListItem> => {
-  const res = await docsApi.post<{ doc: DocListItem }>('/', { title });
+  const res = await docsApi.post<{ doc: DocListItem }>('', { title });
   return res.data.doc;
 };
 
 export const listDocs = async (): Promise<DocListItem[]> => {
-  const res = await docsApi.get<{ docs: DocListItem[] }>('/');
+  const res = await docsApi.get<{ docs: DocListItem[] }>('');
   return res.data.docs;
 };
 
