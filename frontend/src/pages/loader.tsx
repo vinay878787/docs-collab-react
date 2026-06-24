@@ -7,7 +7,7 @@ export const FullPageLoader = () => {
         <CodeIcon className="animate-pulse text-4xl text-blue-600 dark:text-blue-400" />
 
         <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-          CodeCollab
+          DocsCollab
         </h1>
       </div>
 

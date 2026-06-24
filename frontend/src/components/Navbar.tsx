@@ -18,7 +18,7 @@ export const Navbar = () => {
           className="flex items-center gap-2 text-gray-900 dark:text-gray-100 no-underline"
         >
           <CodeIcon className="text-blue-600 dark:text-blue-400 text-xl!" />
-          <span className="text-lg font-bold tracking-tight">CodeCollab</span>
+          <span className="text-lg font-bold tracking-tight">DocsCollab</span>
           <span className="hidden sm:inline-block rounded-full bg-blue-100 dark:bg-blue-950 px-2 py-0.5 text-[10px] font-semibold text-blue-700 dark:text-blue-300">
             🇮🇳 India
           </span>

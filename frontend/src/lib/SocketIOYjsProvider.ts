@@ -71,17 +71,24 @@ export class SocketIOYjsProvider {
     Y.applyUpdate(this.ydoc, new Uint8Array(data.update), 'remote');
   };
 
-  // Relay local awareness changes (cursor position, user info) to the server.
-  private handleAwarenessUpdate = ({
-    added,
-    updated,
-    removed,
-  }: {
-    added: number[];
-    updated: number[];
-    removed: number[];
-  }) => {
-    if (this.destroyed) return;
+  // Relay local awareness changes (cursor position, pointer, user info) to the
+  // server. Guard on origin: skip updates we just applied FROM the network
+  // (origin === 'remote'), otherwise every client would echo back everyone
+  // else's presence — doubling traffic, which matters now that live mouse
+  // pointers stream at ~25 updates/sec per user.
+  private handleAwarenessUpdate = (
+    {
+      added,
+      updated,
+      removed,
+    }: {
+      added: number[];
+      updated: number[];
+      removed: number[];
+    },
+    origin: unknown,
+  ) => {
+    if (this.destroyed || origin === 'remote') return;
     const changed = [...added, ...updated, ...removed];
     const encoded = encodeAwarenessUpdate(this.awareness, changed);
     this.socket.emit('awareness-update', {

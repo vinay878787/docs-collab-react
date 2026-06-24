@@ -89,6 +89,9 @@ coverage/
 # Vite
 .vite/
 
+# vite-plugin-pwa dev service worker output
+dev-dist/
+
 # Turborepo (future-proof)
 .turbo/
 

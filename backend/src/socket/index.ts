@@ -9,6 +9,12 @@ import { DocumentModel } from '../models/Document';
 // On first join after server restart, we reload from MongoDB.
 const docRooms = new Map<string, Y.Doc>();
 
+// Latest awareness payload per socket, per document. Awareness updates encode
+// the full current state of the changed client, so caching the most recent one
+// lets us replay live cursors/pointers to clients that join later — otherwise a
+// new joiner sees nobody until an existing user happens to move.
+const docAwareness = new Map<string, Map<string, number[]>>();
+
 // Debounced save timers — we batch rapid keystrokes into a single DB write.
 const saveTimers = new Map<string, ReturnType<typeof setTimeout>>();
 
@@ -112,6 +118,17 @@ export function initSocket(httpServer: http.Server) {
           state: Array.from(Y.encodeStateAsUpdate(ydoc)),
         });
 
+        // Replay every already-connected peer's latest awareness so the new
+        // joiner sees existing cursors/pointers immediately.
+        const roomAwareness = docAwareness.get(docId);
+        if (roomAwareness) {
+          for (const [otherSocketId, awareness] of roomAwareness) {
+            if (otherSocketId !== socket.id) {
+              socket.emit('awareness-update', { awareness });
+            }
+          }
+        }
+
         socket.to(docId).emit('user-joined', { userId });
       } catch (err) {
         console.error('join-doc error:', err);
@@ -136,16 +153,30 @@ export function initSocket(httpServer: http.Server) {
       },
     );
 
-    // Cursor / presence data — no persistence needed, just relay to the room.
+    // Cursor / presence data — no persistence needed, just cache + relay.
     socket.on(
       'awareness-update',
       ({ docId, awareness }: { docId: string; awareness: number[] }) => {
+        let roomAwareness = docAwareness.get(docId);
+        if (!roomAwareness) {
+          roomAwareness = new Map();
+          docAwareness.set(docId, roomAwareness);
+        }
+        roomAwareness.set(socket.id, awareness);
         socket.to(docId).emit('awareness-update', { awareness });
       },
     );
 
+    // Drop a socket's cached awareness from every room it was tracked in.
+    const forgetAwareness = () => {
+      for (const roomAwareness of docAwareness.values()) {
+        roomAwareness.delete(socket.id);
+      }
+    };
+
     socket.on('leave-doc', ({ docId }: { docId: string }) => {
       socket.leave(docId);
+      docAwareness.get(docId)?.delete(socket.id);
       socket.to(docId).emit('user-left', { userId });
     });
 
@@ -157,6 +188,7 @@ export function initSocket(httpServer: http.Server) {
           io.to(room).emit('user-left', { userId });
         }
       });
+      forgetAwareness();
     });
   });
 }

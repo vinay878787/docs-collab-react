@@ -87,7 +87,7 @@ export const Login = () => {
             className="flex items-center gap-2 text-gray-900 dark:text-gray-100 no-underline"
           >
             <CodeIcon className="text-blue-600 dark:text-blue-400 text-xl!" />
-            <span className="text-lg font-bold tracking-tight">CodeCollab</span>
+            <span className="text-lg font-bold tracking-tight">DocsCollab</span>
           </Link>
           <button
             onClick={toggleTheme}
@@ -111,7 +111,7 @@ export const Login = () => {
               Welcome back
             </h1>
             <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-              Sign in to your CodeCollab account
+              Sign in to your DocsCollab account
             </p>
           </div>
 

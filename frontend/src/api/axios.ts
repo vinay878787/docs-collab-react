@@ -1,7 +1,14 @@
 import axios, { type AxiosInstance } from 'axios';
 
 // Extend Axios request config so our custom flags are typed throughout.
+// Both interfaces need the flags: callers pass an `AxiosRequestConfig` (e.g.
+// `api.get(url, { _noRedirect: true })`), while interceptors read them off the
+// `InternalAxiosRequestConfig`.
 declare module 'axios' {
+  interface AxiosRequestConfig {
+    _retry?: boolean;
+    _noRedirect?: boolean;
+  }
   interface InternalAxiosRequestConfig {
     _retry?: boolean;
     _noRedirect?: boolean;

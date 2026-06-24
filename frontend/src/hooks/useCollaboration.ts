@@ -5,23 +5,6 @@ import { socket } from '@/lib/socket';
 import { SocketIOYjsProvider } from '@/lib/SocketIOYjsProvider';
 import type { AuthUser } from '@/context/AuthContext';
 
-// Distinct, accessible cursor colours for collaborators
-const CURSOR_COLORS = [
-  '#e63946',
-  '#f4a261',
-  '#2a9d8f',
-  '#457b9d',
-  '#7209b7',
-  '#f72585',
-  '#4cc9f0',
-  '#06d6a0',
-];
-
-let colorIndex = 0;
-function nextColor() {
-  return CURSOR_COLORS[colorIndex++ % CURSOR_COLORS.length];
-}
-
 interface Options {
   docId: string;
   user: AuthUser | null;
@@ -52,11 +35,9 @@ export function useCollaboration({ docId, user }: Options) {
     const provider = new SocketIOYjsProvider(docId, ydoc, socket);
     providerRef.current = provider;
 
-    // Advertise this user to all collaborators (name + cursor colour)
-    provider.awareness.setLocalStateField('user', {
-      name: user.username,
-      color: nextColor(),
-    });
+    // The CollaborationCursor extension advertises this user (name + colour)
+    // into awareness; see TiptapEditor. Keeping it in one place avoids the two
+    // sources fighting over the awareness 'user' field.
 
     return () => {
       provider.destroy();

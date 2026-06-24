@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Node, mergeAttributes } from '@tiptap/core';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
@@ -14,6 +14,8 @@ import type { SocketIOYjsProvider } from '@/lib/SocketIOYjsProvider';
 import type { AuthUser } from '@/context/AuthContext';
 import { EditorToolbar } from './EditorToolbar';
 import { Pagination } from './pagination';
+import { CollabPointers } from './CollabPointers';
+import { userColor } from '@/lib/userColor';
 
 const lowlight = createLowlight(common);
 
@@ -55,6 +57,12 @@ export function TiptapEditor({
   user,
 }: Props) {
   const [numPages, setNumPages] = useState(1);
+  const pageRootRef = useRef<HTMLDivElement>(null);
+
+  // Per-session colour: keyed off the Y.Doc clientID so every open tab/user
+  // gets a distinct colour (the same person in two tabs won't collide), and it
+  // stays consistent for the caret, selection, and live mouse pointer.
+  const sessionColor = userColor(String(ydoc.clientID));
 
   // Total visual height: N pages + (N-1) gaps.
   const containerH = numPages * PAGE_H + (numPages - 1) * PAGE_GAP;
@@ -67,7 +75,29 @@ export function TiptapEditor({
         ? [
             CollaborationCursor.configure({
               provider: provider as { awareness: unknown },
-              user: { name: user.username, color: '#4f8ef7' },
+              user: { name: user.username, color: sessionColor },
+              // Caret + always-visible name label, in this user's colour.
+              render: (u: { name: string; color: string }) => {
+                const caret = document.createElement('span');
+                caret.classList.add('collaboration-cursor__caret');
+                caret.setAttribute('style', `border-color: ${u.color}`);
+
+                const label = document.createElement('div');
+                label.classList.add('collaboration-cursor__label');
+                label.setAttribute('style', `background-color: ${u.color}`);
+                label.textContent = u.name;
+
+                caret.appendChild(label);
+                return caret;
+              },
+              // Highlight remote selections with a translucent tint of the
+              // collaborator's colour so the underlying text stays readable.
+              selectionRender: (u: { name: string; color: string }) => ({
+                nodeName: 'span',
+                class: 'collaboration-cursor__selection',
+                style: `background-color: ${u.color}33`,
+                'data-user': u.name,
+              }),
             }),
           ]
         : []),
@@ -103,6 +133,7 @@ export function TiptapEditor({
           without interrupting cursor/selection behaviour.
         */}
         <div
+          ref={pageRootRef}
           data-page-root
           className="relative mx-auto bg-white dark:bg-[#1c1c1c] print:shadow-none"
           style={{
@@ -149,6 +180,16 @@ export function TiptapEditor({
             {header}
             <EditorContent editor={editor} />
           </div>
+
+          {/* Figma-style live mouse pointers for every other collaborator. */}
+          {provider && user && (
+            <CollabPointers
+              awareness={provider.awareness}
+              rootRef={pageRootRef}
+              name={user.username}
+              color={sessionColor}
+            />
+          )}
         </div>
       </div>
     </>

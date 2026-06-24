@@ -144,6 +144,13 @@
   pointer-events: none;
 }
 
+/* Remote collaborators' text selections — translucent tint of their colour
+   (the inline background-color is set per-user by selectionRender). */
+.collaboration-cursor__selection {
+  border-radius: 2px;
+  padding-bottom: 1px;
+}
+
 /* ── Page-break node ─────────────────────────────────────────────────────── */
 .page-break-node {
   display: flex;
