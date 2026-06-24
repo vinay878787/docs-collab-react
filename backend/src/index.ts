@@ -1,10 +1,13 @@
+import http from 'http';
 import express from 'express';
 import cookieParser from 'cookie-parser';
 import cors from 'cors';
 import { connectToDB } from './db/db';
 import authRouter from './routes/auth';
+import docsRouter from './routes/docs';
 import { errorHandler } from './middlewares/error-handler';
 import { doubleCsrfProtection } from './csrf';
+import { initSocket } from './socket';
 
 if (!process.env.ACCESS_TOKEN_SECRET) {
   throw new Error('ACCESS_TOKEN_SECRET environment variable is not set');
@@ -31,8 +34,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(doubleCsrfProtection);
 app.use('/api/v1/auth', authRouter);
-
-const PORT = process.env.PORT;
+app.use('/api/v1/docs', docsRouter);
 
 app.get('/health', (_req, res) => {
   res.status(200).json({ message: 'Server is healthy' });
@@ -40,8 +42,15 @@ app.get('/health', (_req, res) => {
 
 app.use(errorHandler);
 
+const PORT = process.env.PORT;
+
 const startServer = async () => {
-  app.listen(PORT, () => {
+  // Wrap Express in a raw Node http.Server so Socket.io can attach to it.
+  // Socket.io intercepts the WebSocket upgrade before Express ever sees it.
+  const httpServer = http.createServer(app);
+  initSocket(httpServer);
+
+  httpServer.listen(PORT, () => {
     console.log(`http://localhost:${PORT}`);
   });
 

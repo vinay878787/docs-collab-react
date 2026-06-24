@@ -1,13 +1,14 @@
-import { IDocument } from '@docs-collab/shared';
 import mongoose from 'mongoose';
+import { IDocumentDoc } from '../utils/types';
 
-const documentSchema = new mongoose.Schema<IDocument>(
+const documentSchema = new mongoose.Schema<IDocumentDoc>(
   {
     title: {
       type: String,
       required: [true, 'Document title is required'],
       trim: true,
-      minlength: [1, 'Document length may be at least 1 character'],
+      minlength: [1, 'Document title must be at least 1 character'],
+      maxlength: [200, 'Document title must be under 200 characters'],
     },
     owner: {
       type: mongoose.Schema.Types.ObjectId,
@@ -20,7 +21,6 @@ const documentSchema = new mongoose.Schema<IDocument>(
           type: mongoose.Schema.Types.ObjectId,
           ref: 'User',
         },
-
         permission: {
           type: String,
           enum: ['read', 'write'],
@@ -29,9 +29,9 @@ const documentSchema = new mongoose.Schema<IDocument>(
         },
       },
     ],
-    content: {
-      type: String,
-      default: '',
+    yjsState: {
+      type: Buffer,
+      default: null,
     },
   },
   {
@@ -39,7 +39,7 @@ const documentSchema = new mongoose.Schema<IDocument>(
   },
 );
 
-export const DocumentModel = mongoose.model<IDocument>(
+export const DocumentModel = mongoose.model<IDocumentDoc>(
   'Document',
   documentSchema,
 );
