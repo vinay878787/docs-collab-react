@@ -6,5 +6,5 @@ services:
     container_name: docs_collab_backend
     env_file: .env
     ports:
-      - "3001:3000"
+      - "1234:3000"
     restart: unless-stopped
