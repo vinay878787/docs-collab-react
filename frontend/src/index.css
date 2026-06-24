@@ -118,6 +118,32 @@
   border-top-color: #374151;
 }
 
+/* ── Collaborative cursors (y-collaboration-cursor) ─────────────────────── */
+.collaboration-cursor__caret {
+  position: relative;
+  margin-left: -1px;
+  margin-right: -1px;
+  border-left: 2px solid;
+  border-right: 2px solid;
+  word-break: normal;
+  pointer-events: none;
+}
+
+.collaboration-cursor__label {
+  position: absolute;
+  top: -1.5em;
+  left: -2px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  line-height: 1.4;
+  white-space: nowrap;
+  border-radius: 3px 3px 3px 0;
+  padding: 1px 5px;
+  color: #fff;
+  user-select: none;
+  pointer-events: none;
+}
+
 /* ── Page-break node ─────────────────────────────────────────────────────── */
 .page-break-node {
   display: flex;

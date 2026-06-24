@@ -2,12 +2,15 @@ import { Node, mergeAttributes } from '@tiptap/core';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Collaboration from '@tiptap/extension-collaboration';
+import CollaborationCursor from '@tiptap/extension-collaboration-cursor';
 import Underline from '@tiptap/extension-underline';
 import TextAlign from '@tiptap/extension-text-align';
 import { CodeBlockLowlight } from '@tiptap/extension-code-block-lowlight';
 import { createLowlight, common } from 'lowlight';
 import type * as Y from 'yjs';
 import type { ReactNode } from 'react';
+import type { SocketIOYjsProvider } from '@/lib/SocketIOYjsProvider';
+import type { AuthUser } from '@/context/AuthContext';
 import { EditorToolbar } from './EditorToolbar';
 
 const lowlight = createLowlight(common);
@@ -37,11 +40,21 @@ const PageBreak = Node.create({
 interface Props {
   ydoc: Y.Doc;
   editable?: boolean;
-  /** Content rendered inside the paper before the editor (e.g. document title). */
+  /** Rendered inside the paper above the editor (e.g. document title). */
   header?: ReactNode;
+  /** Socket.io YJS provider — enables collaborative cursors when present. */
+  provider?: SocketIOYjsProvider | null;
+  /** Current user — used for cursor label. */
+  user?: AuthUser | null;
 }
 
-export function TiptapEditor({ ydoc, editable = true, header }: Props) {
+export function TiptapEditor({
+  ydoc,
+  editable = true,
+  header,
+  provider,
+  user,
+}: Props) {
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
@@ -49,6 +62,15 @@ export function TiptapEditor({ ydoc, editable = true, header }: Props) {
         codeBlock: false, // replaced by CodeBlockLowlight
       }),
       Collaboration.configure({ document: ydoc }),
+      // Collaborative cursors — only wired up once the socket provider exists
+      ...(provider && user
+        ? [
+            CollaborationCursor.configure({
+              provider: provider as { awareness: unknown },
+              user: { name: user.username, color: '#4f8ef7' },
+            }),
+          ]
+        : []),
       CodeBlockLowlight.configure({ lowlight }),
       Underline,
       TextAlign.configure({ types: ['heading', 'paragraph'] }),

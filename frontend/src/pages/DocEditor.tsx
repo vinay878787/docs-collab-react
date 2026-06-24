@@ -1,12 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from '@tanstack/react-router';
-import * as Y from 'yjs';
-import { IndexeddbPersistence } from 'y-indexeddb';
 import { Route } from '@/routes/docs/$docId';
 import { TiptapEditor } from '@/components/editor/TiptapEditor';
 import { Navbar } from '@/components/Navbar';
 import { getDoc, patchDocTitle } from '@/api/docs';
 import { useAuth } from '@/context/AuthContext';
+import { useCollaboration } from '@/hooks/useCollaboration';
 import type { DocListItem } from '@/api/docs';
 
 function useDebounce<T>(value: T, delay: number): T {
@@ -23,8 +22,6 @@ export const DocEditor = () => {
   const { user, isResolving } = useAuth();
   const navigate = useNavigate();
 
-  const ydoc = useRef(new Y.Doc()).current;
-  const [synced, setSynced] = useState(false);
   const [doc, setDoc] = useState<DocListItem | null>(null);
   const [title, setTitle] = useState('');
 
@@ -32,21 +29,15 @@ export const DocEditor = () => {
   const serverTitle = useRef('');
   const isTitleInitialized = useRef(false);
 
+  // Real-time collaboration: Y.Doc + IndexedDB offline cache + Socket.io sync
+  const { ydoc, synced, providerRef } = useCollaboration({ docId, user });
+
   // Auth guard
   useEffect(() => {
     if (!isResolving && !user) navigate({ to: '/login' });
   }, [isResolving, user, navigate]);
 
-  // IndexedDB persistence — hydrates Y.Doc offline-first
-  useEffect(() => {
-    const persistence = new IndexeddbPersistence(`doc-${docId}`, ydoc);
-    persistence.on('synced', () => setSynced(true));
-    return () => {
-      persistence.destroy();
-    };
-  }, [docId, ydoc]);
-
-  // Fetch doc metadata
+  // Fetch doc metadata (title, owner, collaborators)
   useEffect(() => {
     getDoc(docId)
       .then(({ doc: fetched }) => {
@@ -102,6 +93,8 @@ export const DocEditor = () => {
       <TiptapEditor
         ydoc={ydoc}
         editable={canEdit}
+        provider={providerRef.current}
+        user={user}
         header={
           <div className="mb-8">
             <input
