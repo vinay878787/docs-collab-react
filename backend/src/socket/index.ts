@@ -14,9 +14,19 @@ const saveTimers = new Map<string, ReturnType<typeof setTimeout>>();
 
 async function loadDoc(docId: string): Promise<Y.Doc> {
   const ydoc = new Y.Doc();
-  const record = await DocumentModel.findById(docId).select('yjsState').lean();
-  if (record?.yjsState) {
-    Y.applyUpdate(ydoc, new Uint8Array(record.yjsState as Buffer));
+  // Intentionally NOT using .lean() here — Mongoose needs to apply its schema
+  // type coercion so the yjsState Buffer field comes back as a Node.js Buffer
+  // rather than a raw MongoDB BSON Binary object.
+  const record = await DocumentModel.findById(docId).select('yjsState');
+  if (record?.yjsState && record.yjsState.length > 0) {
+    try {
+      Y.applyUpdate(ydoc, new Uint8Array(record.yjsState));
+    } catch (err) {
+      console.warn(
+        `Could not restore YJS state for doc ${docId}, starting fresh:`,
+        err,
+      );
+    }
   }
   return ydoc;
 }
@@ -82,7 +92,8 @@ export function initSocket(httpServer: http.Server) {
         const isCollaborator = record.collaborators.some(
           (c) => c.user.toString() === userId,
         );
-        if (!isOwner && !isCollaborator) {
+        const isPublic = record.publicAccess?.enabled;
+        if (!isOwner && !isCollaborator && !isPublic) {
           return socket.emit('error', { message: 'Access denied' });
         }
 

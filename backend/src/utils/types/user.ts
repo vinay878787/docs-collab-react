@@ -10,4 +10,8 @@ export interface IDocumentDoc {
   owner: Types.ObjectId;
   collaborators: ICollaboratorDoc[];
   yjsState: Buffer | null;
+  publicAccess: {
+    enabled: boolean;
+    permission: 'read' | 'write';
+  };
 }

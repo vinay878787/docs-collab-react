@@ -2,6 +2,7 @@ import { Router } from 'express';
 import {
   createDocumentSchema,
   patchDocTitleSchema,
+  setPublicAccessSchema,
   shareDocumentSchema,
 } from '@docs-collab/shared';
 import {
@@ -10,6 +11,8 @@ import {
   getDoc,
   listDocs,
   patchDocTitle,
+  removeCollaborator,
+  setPublicAccess,
   shareDoc,
 } from '../controllers/docs';
 import { validate } from '../middlewares/validate';
@@ -32,6 +35,13 @@ docsRouter.post(
   verifyToken,
   validate(shareDocumentSchema),
   shareDoc,
+);
+docsRouter.delete('/:id/share/:userId', verifyToken, removeCollaborator);
+docsRouter.patch(
+  '/:id/public-access',
+  verifyToken,
+  validate(setPublicAccessSchema),
+  setPublicAccess,
 );
 
 export default docsRouter;

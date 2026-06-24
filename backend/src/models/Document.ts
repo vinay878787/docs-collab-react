@@ -33,6 +33,10 @@ const documentSchema = new mongoose.Schema<IDocumentDoc>(
       type: Buffer,
       default: null,
     },
+    publicAccess: {
+      enabled: { type: Boolean, default: false },
+      permission: { type: String, enum: ['read', 'write'], default: 'read' },
+    },
   },
   {
     timestamps: true,

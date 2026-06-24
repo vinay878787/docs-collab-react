@@ -109,178 +109,186 @@ export function EditorToolbar({ editor }: { editor: Editor | null }) {
   const inCodeBlock = editor.isActive('codeBlock');
 
   return (
-    <div className="editor-toolbar sticky top-0 z-20 flex items-center gap-0.5 overflow-x-auto border-b border-gray-200 dark:border-gray-800 bg-white/97 dark:bg-gray-950/97 backdrop-blur px-3 py-1">
-      {/* ── LEFT: Document editing ────────────────────────────────────── */}
+    <div className="editor-toolbar sticky top-0 z-20 border-b border-gray-200 dark:border-gray-800 bg-white/97 dark:bg-gray-950/97 backdrop-blur">
+      <div className="max-w-6xl mx-auto px-4 py-1 flex items-center gap-0.5 overflow-x-auto">
+        {/* ── LEFT: Document editing ────────────────────────────────────── */}
 
-      {/* Headings */}
-      <Btn
-        onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
-        active={editor.isActive('heading', { level: 1 })}
-        title="Heading 1"
-      >
-        <span className="text-[11px] font-bold">H1</span>
-      </Btn>
-      <Btn
-        onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
-        active={editor.isActive('heading', { level: 2 })}
-        title="Heading 2"
-      >
-        <span className="text-[11px] font-bold">H2</span>
-      </Btn>
-      <Btn
-        onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
-        active={editor.isActive('heading', { level: 3 })}
-        title="Heading 3"
-      >
-        <span className="text-[11px] font-bold">H3</span>
-      </Btn>
-
-      <Sep />
-
-      {/* Inline formatting */}
-      <Btn
-        onClick={() => editor.chain().focus().toggleBold().run()}
-        active={editor.isActive('bold')}
-        title="Bold (Ctrl+B)"
-      >
-        <FormatBoldOutlinedIcon style={{ fontSize: 17 }} />
-      </Btn>
-      <Btn
-        onClick={() => editor.chain().focus().toggleItalic().run()}
-        active={editor.isActive('italic')}
-        title="Italic (Ctrl+I)"
-      >
-        <FormatItalicOutlinedIcon style={{ fontSize: 17 }} />
-      </Btn>
-      <Btn
-        onClick={() => editor.chain().focus().toggleUnderline().run()}
-        active={editor.isActive('underline')}
-        title="Underline (Ctrl+U)"
-      >
-        <FormatUnderlinedOutlinedIcon style={{ fontSize: 17 }} />
-      </Btn>
-      <Btn
-        onClick={() => editor.chain().focus().toggleStrike().run()}
-        active={editor.isActive('strike')}
-        title="Strikethrough"
-      >
-        <FormatStrikethroughOutlinedIcon style={{ fontSize: 17 }} />
-      </Btn>
-
-      <Sep />
-
-      {/* Text alignment */}
-      <Btn
-        onClick={() => editor.chain().focus().setTextAlign('left').run()}
-        active={editor.isActive({ textAlign: 'left' })}
-        title="Align Left"
-      >
-        <FormatAlignLeftOutlinedIcon style={{ fontSize: 17 }} />
-      </Btn>
-      <Btn
-        onClick={() => editor.chain().focus().setTextAlign('center').run()}
-        active={editor.isActive({ textAlign: 'center' })}
-        title="Align Center"
-      >
-        <FormatAlignCenterOutlinedIcon style={{ fontSize: 17 }} />
-      </Btn>
-      <Btn
-        onClick={() => editor.chain().focus().setTextAlign('right').run()}
-        active={editor.isActive({ textAlign: 'right' })}
-        title="Align Right"
-      >
-        <FormatAlignRightOutlinedIcon style={{ fontSize: 17 }} />
-      </Btn>
-      <Btn
-        onClick={() => editor.chain().focus().setTextAlign('justify').run()}
-        active={editor.isActive({ textAlign: 'justify' })}
-        title="Justify"
-      >
-        <FormatAlignJustifyOutlinedIcon style={{ fontSize: 17 }} />
-      </Btn>
-
-      <Sep />
-
-      {/* Lists */}
-      <Btn
-        onClick={() => editor.chain().focus().toggleBulletList().run()}
-        active={editor.isActive('bulletList')}
-        title="Bullet List"
-      >
-        <FormatListBulletedOutlinedIcon style={{ fontSize: 17 }} />
-      </Btn>
-      <Btn
-        onClick={() => editor.chain().focus().toggleOrderedList().run()}
-        active={editor.isActive('orderedList')}
-        title="Ordered List"
-      >
-        <FormatListNumberedOutlinedIcon style={{ fontSize: 17 }} />
-      </Btn>
-
-      <Sep />
-
-      {/* Block extras */}
-      <Btn
-        onClick={() => editor.chain().focus().toggleBlockquote().run()}
-        active={editor.isActive('blockquote')}
-        title="Blockquote"
-      >
-        <FormatQuoteOutlinedIcon style={{ fontSize: 17 }} />
-      </Btn>
-      <Btn
-        onClick={() =>
-          editor.chain().focus().insertContent({ type: 'pageBreak' }).run()
-        }
-        title="Insert Page Break"
-      >
-        <InsertPageBreakOutlinedIcon style={{ fontSize: 17 }} />
-      </Btn>
-
-      {/* ── PUSH right ────────────────────────────────────────────────── */}
-      <div className="ml-auto flex items-center gap-0.5">
-        {/* Code tools */}
+        {/* Headings */}
         <Btn
-          onClick={() => editor.chain().focus().toggleCode().run()}
-          active={editor.isActive('code')}
-          title="Inline Code"
-        >
-          <CodeOutlinedIcon style={{ fontSize: 17 }} />
-        </Btn>
-        <Btn
-          onClick={() => editor.chain().focus().toggleCodeBlock().run()}
-          active={inCodeBlock}
-          title="Code Block"
-        >
-          <DataObjectOutlinedIcon style={{ fontSize: 17 }} />
-        </Btn>
-
-        <Sep />
-
-        {/* Prettier */}
-        <Btn
-          onClick={() => void handlePrettier()}
-          disabled={!inCodeBlock || isFormatting}
-          title={
-            inCodeBlock
-              ? 'Format code with Prettier'
-              : 'Place cursor inside a code block to format'
+          onClick={() =>
+            editor.chain().focus().toggleHeading({ level: 1 }).run()
           }
+          active={editor.isActive('heading', { level: 1 })}
+          title="Heading 1"
         >
-          <AutoFixHighOutlinedIcon style={{ fontSize: 17 }} />
-          <span className="ml-1 text-[11px] font-semibold hidden sm:inline">
-            {isFormatting ? '…' : 'Format'}
-          </span>
+          <span className="text-[11px] font-bold">H1</span>
+        </Btn>
+        <Btn
+          onClick={() =>
+            editor.chain().focus().toggleHeading({ level: 2 }).run()
+          }
+          active={editor.isActive('heading', { level: 2 })}
+          title="Heading 2"
+        >
+          <span className="text-[11px] font-bold">H2</span>
+        </Btn>
+        <Btn
+          onClick={() =>
+            editor.chain().focus().toggleHeading({ level: 3 }).run()
+          }
+          active={editor.isActive('heading', { level: 3 })}
+          title="Heading 3"
+        >
+          <span className="text-[11px] font-bold">H3</span>
         </Btn>
 
         <Sep />
 
-        {/* Print */}
-        <Btn onClick={() => window.print()} title="Print document">
-          <PrintOutlinedIcon style={{ fontSize: 17 }} />
-          <span className="ml-1 text-[11px] font-semibold hidden sm:inline">
-            Print
-          </span>
+        {/* Inline formatting */}
+        <Btn
+          onClick={() => editor.chain().focus().toggleBold().run()}
+          active={editor.isActive('bold')}
+          title="Bold (Ctrl+B)"
+        >
+          <FormatBoldOutlinedIcon style={{ fontSize: 17 }} />
         </Btn>
+        <Btn
+          onClick={() => editor.chain().focus().toggleItalic().run()}
+          active={editor.isActive('italic')}
+          title="Italic (Ctrl+I)"
+        >
+          <FormatItalicOutlinedIcon style={{ fontSize: 17 }} />
+        </Btn>
+        <Btn
+          onClick={() => editor.chain().focus().toggleUnderline().run()}
+          active={editor.isActive('underline')}
+          title="Underline (Ctrl+U)"
+        >
+          <FormatUnderlinedOutlinedIcon style={{ fontSize: 17 }} />
+        </Btn>
+        <Btn
+          onClick={() => editor.chain().focus().toggleStrike().run()}
+          active={editor.isActive('strike')}
+          title="Strikethrough"
+        >
+          <FormatStrikethroughOutlinedIcon style={{ fontSize: 17 }} />
+        </Btn>
+
+        <Sep />
+
+        {/* Text alignment */}
+        <Btn
+          onClick={() => editor.chain().focus().setTextAlign('left').run()}
+          active={editor.isActive({ textAlign: 'left' })}
+          title="Align Left"
+        >
+          <FormatAlignLeftOutlinedIcon style={{ fontSize: 17 }} />
+        </Btn>
+        <Btn
+          onClick={() => editor.chain().focus().setTextAlign('center').run()}
+          active={editor.isActive({ textAlign: 'center' })}
+          title="Align Center"
+        >
+          <FormatAlignCenterOutlinedIcon style={{ fontSize: 17 }} />
+        </Btn>
+        <Btn
+          onClick={() => editor.chain().focus().setTextAlign('right').run()}
+          active={editor.isActive({ textAlign: 'right' })}
+          title="Align Right"
+        >
+          <FormatAlignRightOutlinedIcon style={{ fontSize: 17 }} />
+        </Btn>
+        <Btn
+          onClick={() => editor.chain().focus().setTextAlign('justify').run()}
+          active={editor.isActive({ textAlign: 'justify' })}
+          title="Justify"
+        >
+          <FormatAlignJustifyOutlinedIcon style={{ fontSize: 17 }} />
+        </Btn>
+
+        <Sep />
+
+        {/* Lists */}
+        <Btn
+          onClick={() => editor.chain().focus().toggleBulletList().run()}
+          active={editor.isActive('bulletList')}
+          title="Bullet List"
+        >
+          <FormatListBulletedOutlinedIcon style={{ fontSize: 17 }} />
+        </Btn>
+        <Btn
+          onClick={() => editor.chain().focus().toggleOrderedList().run()}
+          active={editor.isActive('orderedList')}
+          title="Ordered List"
+        >
+          <FormatListNumberedOutlinedIcon style={{ fontSize: 17 }} />
+        </Btn>
+
+        <Sep />
+
+        {/* Block extras */}
+        <Btn
+          onClick={() => editor.chain().focus().toggleBlockquote().run()}
+          active={editor.isActive('blockquote')}
+          title="Blockquote"
+        >
+          <FormatQuoteOutlinedIcon style={{ fontSize: 17 }} />
+        </Btn>
+        <Btn
+          onClick={() =>
+            editor.chain().focus().insertContent({ type: 'pageBreak' }).run()
+          }
+          title="Insert Page Break"
+        >
+          <InsertPageBreakOutlinedIcon style={{ fontSize: 17 }} />
+        </Btn>
+
+        {/* ── PUSH right ────────────────────────────────────────────────── */}
+        <div className="ml-auto flex items-center gap-0.5">
+          {/* Code tools */}
+          <Btn
+            onClick={() => editor.chain().focus().toggleCode().run()}
+            active={editor.isActive('code')}
+            title="Inline Code"
+          >
+            <CodeOutlinedIcon style={{ fontSize: 17 }} />
+          </Btn>
+          <Btn
+            onClick={() => editor.chain().focus().toggleCodeBlock().run()}
+            active={inCodeBlock}
+            title="Code Block"
+          >
+            <DataObjectOutlinedIcon style={{ fontSize: 17 }} />
+          </Btn>
+
+          <Sep />
+
+          {/* Prettier */}
+          <Btn
+            onClick={() => void handlePrettier()}
+            disabled={!inCodeBlock || isFormatting}
+            title={
+              inCodeBlock
+                ? 'Format code with Prettier'
+                : 'Place cursor inside a code block to format'
+            }
+          >
+            <AutoFixHighOutlinedIcon style={{ fontSize: 17 }} />
+            <span className="ml-1 text-[11px] font-semibold hidden sm:inline">
+              {isFormatting ? '…' : 'Format'}
+            </span>
+          </Btn>
+
+          <Sep />
+
+          {/* Print */}
+          <Btn onClick={() => window.print()} title="Print document">
+            <PrintOutlinedIcon style={{ fontSize: 17 }} />
+            <span className="ml-1 text-[11px] font-semibold hidden sm:inline">
+              Print
+            </span>
+          </Btn>
+        </div>
       </div>
     </div>
   );

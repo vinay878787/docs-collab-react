@@ -1,3 +1,4 @@
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Node, mergeAttributes } from '@tiptap/core';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
@@ -15,17 +16,13 @@ import { EditorToolbar } from './EditorToolbar';
 
 const lowlight = createLowlight(common);
 
-// Inline custom node — renders as a visible page-break marker in the editor
-// and triggers a CSS page break when printing.
 const PageBreak = Node.create({
   name: 'pageBreak',
   group: 'block',
   atom: true,
-
   parseHTML() {
     return [{ tag: 'div[data-page-break]' }];
   },
-
   renderHTML({ HTMLAttributes }) {
     return [
       'div',
@@ -40,13 +37,14 @@ const PageBreak = Node.create({
 interface Props {
   ydoc: Y.Doc;
   editable?: boolean;
-  /** Rendered inside the paper above the editor (e.g. document title). */
   header?: ReactNode;
-  /** Socket.io YJS provider — enables collaborative cursors when present. */
   provider?: SocketIOYjsProvider | null;
-  /** Current user — used for cursor label. */
   user?: AuthUser | null;
 }
+
+// Letter page at 96 dpi. GAP is the gray space between pages (visible desk).
+const PAGE_H = 1056;
+const PAGE_GAP = 64;
 
 export function TiptapEditor({
   ydoc,
@@ -55,14 +53,32 @@ export function TiptapEditor({
   provider,
   user,
 }: Props) {
+  const [numPages, setNumPages] = useState(1);
+  const contentRef = useRef<HTMLDivElement>(null);
+
+  const recalcPages = useCallback(() => {
+    if (!contentRef.current) return;
+    setNumPages(
+      Math.max(1, Math.ceil(contentRef.current.scrollHeight / PAGE_H)),
+    );
+  }, []);
+
+  useEffect(() => {
+    const el = contentRef.current;
+    if (!el) return;
+    const obs = new ResizeObserver(recalcPages);
+    obs.observe(el);
+    recalcPages();
+    return () => obs.disconnect();
+  }, [recalcPages]);
+
+  // Total visual height: N pages + (N-1) gaps.
+  const containerH = numPages * PAGE_H + (numPages - 1) * PAGE_GAP;
+
   const editor = useEditor({
     extensions: [
-      StarterKit.configure({
-        history: false, // Collaboration brings its own YJS-backed undo/redo
-        codeBlock: false, // replaced by CodeBlockLowlight
-      }),
+      StarterKit.configure({ history: false, codeBlock: false }),
       Collaboration.configure({ document: ydoc }),
-      // Collaborative cursors — only wired up once the socket provider exists
       ...(provider && user
         ? [
             CollaborationCursor.configure({
@@ -85,20 +101,68 @@ export function TiptapEditor({
     },
   });
 
+  useEffect(() => {
+    if (editor && editor.isEditable !== editable) editor.setEditable(editable);
+  }, [editor, editable]);
+
   return (
     <>
-      {/* Toolbar — sticky, sits above the paper area */}
       <EditorToolbar editor={editor} />
 
-      {/* Gray "printing desk" background, like Google Docs */}
-      <div className="editor-print-area bg-[#e8e8e8] dark:bg-[#111111] min-h-[calc(100vh-96px)] py-8 overflow-x-auto print:bg-transparent print:py-0">
-        {/* Letter-size paper (816 × 1056 px at 96 dpi) */}
+      {/* Gray printing-desk area */}
+      <div className="editor-print-area bg-[#e8e8e8] dark:bg-[#111111] min-h-[calc(100vh-96px)] py-10 overflow-x-auto print:bg-transparent print:py-0">
+        {/*
+          One white container spans all pages + gaps.
+          Content div (z-10, white bg) grows naturally — no physical gaps in the text flow.
+          Gray gap overlays (z-20) sit on top at each page boundary, visually separating pages
+          without interrupting cursor/selection behaviour.
+        */}
         <div
-          className="editor-paper relative mx-auto bg-white dark:bg-[#1c1c1c] shadow-[0_1px_3px_rgba(0,0,0,0.1),0_4px_16px_rgba(0,0,0,0.08)] print:shadow-none print:mx-0"
-          style={{ width: '816px', minHeight: '1056px' }}
+          className="relative mx-auto bg-white dark:bg-[#1c1c1c] print:shadow-none"
+          style={{
+            width: '816px',
+            minHeight: `${containerH}px`,
+            // Outer shadow only on the very first page top/sides; individual page-bottom
+            // shadows come from the gap overlays below.
+            boxShadow:
+              '0 1px 3px rgba(0,0,0,0.10), 0 4px 16px rgba(0,0,0,0.08)',
+          }}
         >
-          {/* Page content — 1 inch margins (96 px each side) */}
-          <div className="px-24 pt-16 pb-20">
+          {/* ── Gap overlays ─────────────────────────────────────────────
+              Positioned at (i+1)*PAGE_H + i*PAGE_GAP within the container.
+              z-20 renders them above the content div (z-10).
+              pointer-events-none lets clicks/selection pass through to text.
+          ────────────────────────────────────────────────────────────── */}
+          {numPages > 1 &&
+            Array.from({ length: numPages - 1 }, (_, i) => (
+              <div
+                key={i}
+                className="absolute left-0 right-0 z-20 pointer-events-none overflow-hidden print:hidden"
+                style={{
+                  top: `${(i + 1) * PAGE_H + i * PAGE_GAP}px`,
+                  height: `${PAGE_GAP}px`,
+                  background: 'inherit', // picks up the outer #e8e8e8 / #111111
+                  backgroundColor: 'var(--tw-bg-opacity, 1)',
+                }}
+              >
+                {/* Explicitly paint the gap in the desk colour */}
+                <div className="absolute inset-0 bg-[#e8e8e8] dark:bg-[#111111]" />
+                {/* Soft shadow cast downward from the bottom edge of the page above */}
+                <div className="absolute top-0 left-0 right-0 h-4 bg-gradient-to-b from-black/10 to-transparent z-10" />
+                {/* Soft shadow cast upward from the top edge of the page below */}
+                <div className="absolute bottom-0 left-0 right-0 h-4 bg-gradient-to-t from-black/10 to-transparent z-10" />
+              </div>
+            ))}
+
+          {/* ── Content layer ───────────────────────────────────────────
+              White background (z-10) spans all pages + gap positions.
+              The gap overlays (z-20) cover the gap slices, hiding the
+              content that happens to fall in those 64 px bands.
+          ────────────────────────────────────────────────────────────── */}
+          <div
+            ref={contentRef}
+            className="relative z-10 bg-white dark:bg-[#1c1c1c] px-24 pt-16 pb-20 print:px-0 print:pt-0 print:pb-0"
+          >
             {header}
             <EditorContent editor={editor} />
           </div>

@@ -73,13 +73,26 @@ export const getDoc = async (
         (c.user as unknown as { _id: Types.ObjectId })._id.toString() ===
         userId,
     );
+    const isPublic = (
+      doc as unknown as {
+        publicAccess: { enabled: boolean; permission: 'read' | 'write' };
+      }
+    ).publicAccess?.enabled;
 
-    if (ownerId !== userId && !collaborator) {
+    if (ownerId !== userId && !collaborator && !isPublic) {
       return res.status(403).json({ message: 'Access denied' });
     }
 
+    const publicPermission =
+      (
+        doc as unknown as {
+          publicAccess: { enabled: boolean; permission: 'read' | 'write' };
+        }
+      ).publicAccess?.permission ?? 'read';
     const userPermission =
-      ownerId === userId ? 'write' : collaborator!.permission;
+      ownerId === userId
+        ? 'write'
+        : (collaborator?.permission ?? (isPublic ? publicPermission : 'read'));
 
     res.json({ doc, userPermission });
   } catch (err) {
@@ -137,6 +150,67 @@ export const patchDocTitle = async (
     await doc.save();
 
     res.json({ doc: { _id: doc._id, title: doc.title } });
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const removeCollaborator = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const { id, userId: targetUserId } = req.params;
+    const callerId = req.user!.id;
+
+    const doc = await DocumentModel.findById(id);
+    if (!doc) return res.status(404).json({ message: 'Document not found' });
+    if (doc.owner.toString() !== callerId) {
+      return res
+        .status(403)
+        .json({ message: 'Only the owner can manage sharing' });
+    }
+
+    doc.collaborators = doc.collaborators.filter(
+      (c) => c.user.toString() !== targetUserId,
+    );
+    await doc.save();
+
+    res.json({ message: 'Collaborator removed' });
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const setPublicAccess = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const { id } = req.params;
+    const { enabled, permission } = req.body as {
+      enabled: boolean;
+      permission: 'read' | 'write';
+    };
+    const userId = req.user!.id;
+
+    const doc = await DocumentModel.findById(id);
+    if (!doc) return res.status(404).json({ message: 'Document not found' });
+    if (doc.owner.toString() !== userId) {
+      return res
+        .status(403)
+        .json({ message: 'Only the owner can manage sharing' });
+    }
+
+    doc.publicAccess = { enabled, permission };
+    await doc.save();
+
+    res.json({
+      message: enabled ? 'Public access enabled' : 'Public access disabled',
+      publicAccess: doc.publicAccess,
+    });
   } catch (err) {
     next(err);
   }
