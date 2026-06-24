@@ -24,6 +24,14 @@ export default [
         ...globals.node,
       },
     },
+    rules: {
+      // Allow intentionally-unused args/vars when prefixed with `_`
+      // (e.g. the mandatory 4-arg Express error handler signature).
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        { argsIgnorePattern: '^_', varsIgnorePattern: '^_' },
+      ],
+    },
   },
   {
     files: ['**/*.{tsx}'],

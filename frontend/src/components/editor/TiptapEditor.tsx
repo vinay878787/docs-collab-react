@@ -15,7 +15,7 @@ import type { AuthUser } from '@/context/AuthContext';
 import { EditorToolbar } from './EditorToolbar';
 import { Pagination } from './pagination';
 import { CollabPointers } from './CollabPointers';
-import { userColor } from '@/lib/userColor';
+import { userColor, safeColor, safeName } from '@/lib/userColor';
 
 const lowlight = createLowlight(common);
 
@@ -77,15 +77,18 @@ export function TiptapEditor({
               provider: provider as { awareness: unknown },
               user: { name: user.username, color: sessionColor },
               // Caret + always-visible name label, in this user's colour.
+              // u.* comes from untrusted awareness — sanitise before it touches
+              // a style string (color) or the DOM (name via textContent).
               render: (u: { name: string; color: string }) => {
+                const color = safeColor(u.color);
                 const caret = document.createElement('span');
                 caret.classList.add('collaboration-cursor__caret');
-                caret.setAttribute('style', `border-color: ${u.color}`);
+                caret.setAttribute('style', `border-color: ${color}`);
 
                 const label = document.createElement('div');
                 label.classList.add('collaboration-cursor__label');
-                label.setAttribute('style', `background-color: ${u.color}`);
-                label.textContent = u.name;
+                label.setAttribute('style', `background-color: ${color}`);
+                label.textContent = safeName(u.name);
 
                 caret.appendChild(label);
                 return caret;
@@ -95,8 +98,8 @@ export function TiptapEditor({
               selectionRender: (u: { name: string; color: string }) => ({
                 nodeName: 'span',
                 class: 'collaboration-cursor__selection',
-                style: `background-color: ${u.color}33`,
-                'data-user': u.name,
+                style: `background-color: ${safeColor(u.color)}33`,
+                'data-user': safeName(u.name),
               }),
             }),
           ]

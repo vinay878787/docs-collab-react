@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { RefObject } from 'react';
 import type { Awareness } from 'y-protocols/awareness';
+import { safeColor, safeName } from '@/lib/userColor';
 
 /**
  * Figma-style live mouse pointers.
@@ -69,8 +70,16 @@ export function CollabPointers({ awareness, rootRef, name, color }: Props) {
       awareness.getStates().forEach((state, clientId) => {
         if (clientId === awareness.clientID) return;
         const p = (state as { pointer?: RemotePointer | null }).pointer;
-        if (p && typeof p.x === 'number' && typeof p.y === 'number') {
-          next.push({ clientId, x: p.x, y: p.y, name: p.name, color: p.color });
+        // Pointer data is untrusted (relayed awareness): require finite coords
+        // and sanitise the name/colour before they reach the DOM/styles.
+        if (p && Number.isFinite(p.x) && Number.isFinite(p.y)) {
+          next.push({
+            clientId,
+            x: p.x,
+            y: p.y,
+            name: safeName(p.name),
+            color: safeColor(p.color),
+          });
         }
       });
       setPointers(next);

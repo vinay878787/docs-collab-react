@@ -10,6 +10,7 @@ import {
 } from '../controllers/auth';
 import { verifyToken } from '../middlewares/verify-token';
 import { validate } from '../middlewares/validate';
+import { authLimiter } from '../middlewares/rate-limit';
 import {
   loginSchema,
   registerSchema,
@@ -36,9 +37,19 @@ router.get('/csrf-token', (req, res) => {
 });
 
 router.get('/me', verifyToken, meController);
-router.post('/register', validate(registerSchema), registerController);
-router.post('/login', validate(loginSchema), loginController);
-router.post('/google', validate(googleSignInSchema), googleSignInController);
+router.post(
+  '/register',
+  authLimiter,
+  validate(registerSchema),
+  registerController,
+);
+router.post('/login', authLimiter, validate(loginSchema), loginController);
+router.post(
+  '/google',
+  authLimiter,
+  validate(googleSignInSchema),
+  googleSignInController,
+);
 router.post('/logout', logoutController);
 router.post('/refresh', refreshController);
 
