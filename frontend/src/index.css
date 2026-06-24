@@ -175,8 +175,22 @@
   border-top-color: #4b5563;
 }
 
+/* ── Screen pagination spacers ───────────────────────────────────────────── */
+/* Reserve the per-page bottom margin + gap + next top margin so text reflows
+   to the next page instead of running into the bottom margin. Injected by the
+   Pagination plugin as widget decorations (view-only, never in the document). */
+.pagination-spacer {
+  user-select: none;
+  pointer-events: none;
+}
+
 /* ── Print styles ────────────────────────────────────────────────────────── */
 @media print {
+  /* Screen spacers must not add space in print — print uses real @page margins. */
+  .pagination-spacer {
+    display: none !important;
+  }
+
   /* Hide all UI chrome */
   .editor-toolbar,
   nav {

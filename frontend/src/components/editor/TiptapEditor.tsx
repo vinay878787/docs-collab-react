@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Node, mergeAttributes } from '@tiptap/core';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
@@ -13,6 +13,7 @@ import type { ReactNode } from 'react';
 import type { SocketIOYjsProvider } from '@/lib/SocketIOYjsProvider';
 import type { AuthUser } from '@/context/AuthContext';
 import { EditorToolbar } from './EditorToolbar';
+import { Pagination } from './pagination';
 
 const lowlight = createLowlight(common);
 
@@ -54,23 +55,6 @@ export function TiptapEditor({
   user,
 }: Props) {
   const [numPages, setNumPages] = useState(1);
-  const contentRef = useRef<HTMLDivElement>(null);
-
-  const recalcPages = useCallback(() => {
-    if (!contentRef.current) return;
-    setNumPages(
-      Math.max(1, Math.ceil(contentRef.current.scrollHeight / PAGE_H)),
-    );
-  }, []);
-
-  useEffect(() => {
-    const el = contentRef.current;
-    if (!el) return;
-    const obs = new ResizeObserver(recalcPages);
-    obs.observe(el);
-    recalcPages();
-    return () => obs.disconnect();
-  }, [recalcPages]);
 
   // Total visual height: N pages + (N-1) gaps.
   const containerH = numPages * PAGE_H + (numPages - 1) * PAGE_GAP;
@@ -91,6 +75,7 @@ export function TiptapEditor({
       Underline,
       TextAlign.configure({ types: ['heading', 'paragraph'] }),
       PageBreak,
+      Pagination.configure({ onPagesChange: setNumPages }),
     ],
     editable,
     editorProps: {
@@ -118,6 +103,7 @@ export function TiptapEditor({
           without interrupting cursor/selection behaviour.
         */}
         <div
+          data-page-root
           className="relative mx-auto bg-white dark:bg-[#1c1c1c] print:shadow-none"
           style={{
             width: '816px',
@@ -159,10 +145,7 @@ export function TiptapEditor({
               The gap overlays (z-20) cover the gap slices, hiding the
               content that happens to fall in those 64 px bands.
           ────────────────────────────────────────────────────────────── */}
-          <div
-            ref={contentRef}
-            className="relative z-10 bg-white dark:bg-[#1c1c1c] px-24 pt-16 pb-20 print:px-0 print:pt-0 print:pb-0"
-          >
+          <div className="relative z-10 bg-white dark:bg-[#1c1c1c] px-24 pt-16 pb-20 print:px-0 print:pt-0 print:pb-0">
             {header}
             <EditorContent editor={editor} />
           </div>
