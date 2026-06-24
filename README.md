@@ -1,232 +1,284 @@
 # docs-collab
 
-A real-time collaborative document editor. Users can create and join documents using a PIN, edit simultaneously, and authenticate via email/password or Google OAuth.
+docs-collab is a real-time collaborative document editor for rich text and code-heavy docs. It is built as an npm workspaces monorepo with a React/Vite frontend, an Express/MongoDB backend, and a shared TypeScript package for validation schemas and types.
 
----
+The current app supports email/password and Google sign-in, cookie-based sessions with refresh tokens, CSRF protection, document dashboards, live multi-user editing, collaborator presence, read/write sharing, public links, offline local document cache, syntax-highlighted code blocks, in-editor Prettier formatting, pagination, and print output.
 
-## Project Structure
+## Workspace Layout
 
-```
+```text
 docs-collab/
-├── backend/          Express API server
-├── frontend/         React + Vite SPA
-├── shared/           Shared TypeScript types (@docs-collab/shared)
-├── constants/        (legacy — superseded by shared/)
-├── package.json      Monorepo root: workspaces, scripts, dev tooling
-├── eslint.config.js
-├── .prettierrc
-└── commitlint.config.js
+|-- backend/              Express API, Socket.io, MongoDB models
+|-- frontend/             React 19 + Vite SPA
+|-- shared/               Shared Zod schemas and TypeScript types
+|-- .husky/               lint-staged and commitlint hooks
+|-- commitlint.config.js  Conventional Commits config
+|-- eslint.config.js      Root ESLint flat config
+|-- package.json          npm workspace scripts
+`-- README.md
 ```
 
-This is an **npm workspaces monorepo**. All three sub-packages (`frontend`, `backend`, `shared`) live in one repository and are managed together. The root `package.json` is the orchestrator — it does not ship any application code itself.
+Generated or local-only folders such as `node_modules/`, `dist/`, `dev-dist/`, and environment files are ignored by git and are not part of the source contract.
 
----
+## Packages
 
-## Why a Monorepo?
+### Root
 
-- Frontend and backend can share TypeScript types (via `shared/`) without publishing to npm
-- One `npm install` from the root installs everything
-- One lint/format/commit pipeline covers the entire codebase
-- `npm run dev` starts both servers with a single command
-
----
-
-## Root Level
-
-The root is the **workspace orchestrator and tooling host**. Nothing here is imported by application code.
-
-| File                              | Purpose                                                                                                |
-| --------------------------------- | ------------------------------------------------------------------------------------------------------ |
-| `package.json`                    | Declares workspaces, runs `concurrently` for dev, wires build/lint scripts                             |
-| `eslint.config.js`                | Single ESLint flat config for the whole repo                                                           |
-| `.prettierrc` / `.prettierignore` | Formatting rules                                                                                       |
-| `commitlint.config.js`            | Enforces [Conventional Commits](https://www.conventionalcommits.org/) (e.g. `feat:`, `fix:`, `chore:`) |
-| `.husky/pre-commit`               | Runs lint-staged before every commit (lint + format changed files only)                                |
-| `.husky/commit-msg`               | Runs commitlint to reject malformed commit messages                                                    |
-
-**Key root scripts:**
+The root package only orchestrates the workspace. It does not contain application runtime code.
 
 ```bash
-npm run dev          # starts frontend + backend concurrently
-npm run build        # builds frontend, then backend
-npm run lint         # lints all workspaces
-npm run format       # formats everything with Prettier
+npm install
+npm run dev
+npm run build
+npm run lint
+npm run format
 ```
 
----
+Root scripts:
 
-## `shared/` — @docs-collab/shared
+| Script                 | What it does                                             |
+| ---------------------- | -------------------------------------------------------- |
+| `npm run dev`          | Starts frontend and backend together with `concurrently` |
+| `npm run dev:frontend` | Runs Vite in `frontend/`                                 |
+| `npm run dev:backend`  | Runs the Express server with `nodemon` and `tsx`         |
+| `npm run build`        | Builds frontend, then backend                            |
+| `npm run lint`         | Runs ESLint across the repo                              |
+| `npm run lint:fix`     | Runs ESLint fixes across the repo                        |
+| `npm run format`       | Formats the repo with Prettier                           |
+| `npm run preview`      | Serves the built frontend preview                        |
+| `npm run start`        | Starts the compiled backend                              |
 
-```
-shared/
-└── src/
-    ├── index.ts     re-exports everything
-    └── user.ts      IUser interface
-```
+Husky runs `lint-staged` before commits and commitlint on commit messages. Commit messages should follow Conventional Commits, for example `feat: add document sharing`.
 
-**Why it exists:** TypeScript interfaces need to be identical on both sides of the wire. Rather than duplicating them or using a hack like `../../../constants/user` (which breaks `rootDir` and deployment), `shared/` is a proper npm workspace package.
+### `shared/`
 
-Both `frontend` and `backend` declare `"@docs-collab/shared": "*"` as a dependency. npm workspaces creates a symlink: `node_modules/@docs-collab/shared → ../../shared`. Neither package needs to know where the other lives on disk.
+`@docs-collab/shared` exports reusable contracts:
 
-**Usage:**
+- Auth schemas: register, login, Google sign-in
+- Document schemas: create document, patch title, share document, set public access
+- User and document TypeScript types
 
-```ts
-import type { IUser } from '@docs-collab/shared';
-```
+Both `frontend` and `backend` import these contracts through the workspace package instead of duplicating validation logic.
 
-**Rule of thumb for what goes here:** if you write `import` from it in app code, it belongs in `shared/`. If it only runs in a terminal or git hook, it belongs at the root.
+### `backend/`
 
----
+The backend is an Express 5 API with MongoDB/Mongoose persistence and Socket.io for live collaboration.
 
-## `backend/` — Express API
+Important folders:
 
-```
-backend/
-├── src/
-│   ├── index.ts           Express app bootstrap, middleware, route mounting
-│   ├── db/
-│   │   └── db.ts          MongoDB connection via Mongoose
-│   ├── models/
-│   │   └── User.ts        Mongoose schema + model (typed against IUser)
-│   ├── controllers/
-│   │   └── auth.ts        registerController, loginController, googleSignInController
-│   ├── routes/
-│   │   └── auth.ts        Mounts controllers at POST /register /login /google
-│   └── utils/
-│       └── helper.ts      signToken (JWT), sanitizeUsername
-├── .env                   MONGODB_URL, PORT, JWT_SECRET, GOOGLE_CLIENT_ID
-├── tsconfig.json          target: ES2022, module: NodeNext, rootDir: ./src
-└── package.json           type: commonjs
+```text
+backend/src/
+|-- controllers/    Auth and document controller logic
+|-- db/             Mongoose connection
+|-- middlewares/    Auth, validation, rate limit, error handling
+|-- models/         User, Session, Document
+|-- routes/         /api/v1/auth and /api/v1/docs routers
+|-- socket/         Socket.io + Yjs room synchronization
+|-- csrf.ts         double-submit CSRF configuration
+`-- index.ts        Server bootstrap
 ```
 
-**Tech choices:**
+Backend responsibilities:
 
-| Choice              | Reason                                                         |
-| ------------------- | -------------------------------------------------------------- |
-| Express 5           | Stable, minimal, async error propagation built-in              |
-| Mongoose            | Schema validation + TypeScript generics on top of MongoDB      |
-| bcrypt-ts           | Password hashing, pure TypeScript (no native bindings)         |
-| jsonwebtoken        | Signs 7-day JWTs returned to the client                        |
-| google-auth-library | Verifies Google ID tokens (OAuth credential from the frontend) |
-| tsx                 | Runs TypeScript directly in dev — no compile step needed       |
-| nodemon             | Watches `src/` and restarts on file changes                    |
+- Connect to MongoDB with `MONGODB_URL`
+- Issue short-lived HTTP-only `accessToken` cookies and rotating `refreshToken` cookies
+- Store hashed refresh tokens in `Session` documents with TTL expiry
+- Protect mutating requests with `csrf-csrf`
+- Rate-limit all API traffic and tighten limits for auth endpoints
+- Validate request bodies with shared Zod schemas
+- Store document metadata, collaborators, public access settings, and Yjs state
+- Authorize document access for owners, collaborators, and public-link users
+- Attach Socket.io to the same HTTP server for Yjs updates and awareness
 
-**Auth flow:**
+### `frontend/`
 
+The frontend is a Vite SPA using React 19, TanStack Router, TanStack Query, Tailwind CSS 4, MUI icons/components, Tiptap, Yjs, and Socket.io Client.
+
+Important folders:
+
+```text
+frontend/src/
+|-- api/          Axios clients for auth and docs
+|-- components/   Navbar and editor UI
+|-- context/      Auth and theme providers
+|-- hooks/        Auth, docs, and collaboration hooks
+|-- lib/          Socket, Yjs provider, code formatting, user colors
+|-- pages/        Home, login, register, dashboard, editor
+|-- routes/       TanStack file routes
+`-- index.css     Tailwind, editor, pagination, and print styles
 ```
-Email/password:
-  POST /api/auth/register  →  hash password  →  create User  →  return JWT
-  POST /api/auth/login     →  verify hash    →  return JWT
 
-Google OAuth:
-  POST /api/auth/google    →  verify ID token with Google
-                           →  find or create User (provider: 'google')
-                           →  return JWT
-```
+Frontend responsibilities:
 
-The backend never redirects to Google — the frontend handles the Google button and sends back the `credential` (ID token). The backend only verifies it.
+- Render the marketing home page, auth pages, dashboard, and document editor
+- Resolve the logged-in user through `/me` before protected routes render
+- Add CSRF headers to mutating API requests
+- Refresh expired access tokens once on 401 and replay queued requests
+- Persist editor state locally with IndexedDB for fast/offline hydration
+- Sync Yjs document updates through Socket.io
+- Render live collaborator cursors, selections, and mouse pointers
+- Support read-only and editable editor modes based on server permissions
+- Format code blocks with Prettier in the browser
+- Provide print-friendly letter-page layout with visual pagination
+- Register a PWA service worker with app icons and SPA fallback
 
-**Environment variables (`.env`):**
+## Features
 
-```
-MONGODB_URL=      MongoDB Atlas connection string
+- Account registration and login with email/password
+- Google OAuth sign-in through `@react-oauth/google`
+- HTTP-only cookie auth with access and refresh token rotation
+- CSRF protection for POST, PUT, PATCH, and DELETE requests
+- Dashboard split between owned documents and documents shared with the user
+- Create, rename, list, open, and delete documents
+- Owner-only sharing modal
+- Invite collaborators by email with `read` or `write` permission
+- Revoke collaborator access
+- Public link access: restricted, anyone signed in can view, or anyone signed in can edit
+- Real-time collaborative editing with Tiptap, Yjs, and Socket.io
+- MongoDB persistence of encoded Yjs document state
+- Local IndexedDB cache for editor state
+- Live collaborator caret labels, selections, and pointer presence
+- Rich text controls: headings, bold, italic, underline, strike, alignment, lists, quote
+- Code tools: inline code, syntax-highlighted code blocks, Prettier formatting
+- Page breaks, visual pagination, and print styles
+- Dark/light theme stored in localStorage
+- Vite PWA manifest, app icons, and service worker precache
+
+## Environment Variables
+
+Create local environment files; do not commit them.
+
+`backend/.env`:
+
+```env
+MONGODB_URL=
 PORT=5000
-JWT_SECRET=       Long random secret (use: openssl rand -hex 32)
-GOOGLE_CLIENT_ID= From Google Cloud Console → APIs & Services → Credentials
+FRONTEND_URL=http://localhost:5173
+ACCESS_TOKEN_SECRET=
+REFRESH_TOKEN_SECRET=
+CSRF_SECRET=
+NODE_ENV=development
 ```
 
----
+`frontend/.env.development`:
 
-## `frontend/` — React SPA
-
-```
-frontend/
-├── src/
-│   ├── main.tsx               React entry, router setup
-│   ├── routes/                File-based routing (TanStack Router)
-│   │   ├── __root.tsx         Root layout (Navbar, ThemeProvider wrapper)
-│   │   ├── index.tsx          / → renders Home page
-│   │   ├── login.tsx          /login → renders Login page
-│   │   └── register.tsx       /register → renders Register page
-│   ├── routeTree.gen.ts       AUTO-GENERATED — do not edit manually
-│   ├── pages/                 Full-page components rendered by routes
-│   │   ├── Home.tsx
-│   │   ├── Login.tsx
-│   │   └── Register.tsx
-│   ├── components/
-│   │   └── Navbar.tsx         Sticky header with theme toggle
-│   ├── context/
-│   │   └── ThemeContext.tsx   Dark/light mode (persisted in localStorage)
-│   ├── api/
-│   │   ├── axios.ts           Axios instance pre-configured with base URL
-│   │   └── auth.ts            API call functions (register, login, google)
-│   └── utils/
-│       └── zod/               Zod validation schemas for forms
-│           ├── login-schema.ts
-│           └── register-schema.ts
-├── .env.development           VITE_DEV_BACKEND_URL=http://localhost:5000
-├── .env.production            VITE_DEV_BACKEND_URL=<production API URL>
-├── vite.config.ts
-└── tsconfig.app.json
+```env
+VITE_DEV_BACKEND_URL=http://localhost:5000
+VITE_GOOGLE_CLIENT_ID=
 ```
 
-**Tech choices:**
+`frontend/.env.production`:
 
-| Choice            | Reason                                                                                                                   |
-| ----------------- | ------------------------------------------------------------------------------------------------------------------------ |
-| Vite              | Fast HMR, native ES modules, much faster than CRA                                                                        |
-| TanStack Router   | Type-safe file-based routing; auto-generates `routeTree.gen.ts` from the `routes/` folder structure                      |
-| MUI (Material-UI) | Component library with built-in theming and dark mode                                                                    |
-| Tailwind CSS 4    | Utility classes alongside MUI for layout/spacing                                                                         |
-| react-hook-form   | Uncontrolled form inputs — minimal re-renders                                                                            |
-| Zod               | Schema-first validation; schemas in `utils/zod/` are shared between form resolvers and (eventually) API response parsing |
-
-**Routing:** TanStack Router scans `src/routes/` at build time and generates `routeTree.gen.ts`. The file structure directly maps to URL structure. Never edit `routeTree.gen.ts` by hand — it regenerates on every save.
-
-**Environment variable pattern:** Vite exposes only variables prefixed with `VITE_`. The axios base URL reads `import.meta.env.VITE_DEV_BACKEND_URL` so it automatically points to localhost in dev and the production server in production builds.
-
----
-
-## Deployment (Intended)
-
-No deployment config exists yet. The intended setup:
-
-```
-┌─────────────────────┐        ┌──────────────────────┐
-│   Vercel / Netlify  │        │  Render / Railway    │
-│   (frontend/)       │──API──▶│  (backend/)          │
-│   Static SPA        │        │  Node.js + Express   │
-└─────────────────────┘        └──────────┬───────────┘
-                                           │
-                                ┌──────────▼───────────┐
-                                │   MongoDB Atlas      │
-                                │   (cloud DB)         │
-                                └──────────────────────┘
+```env
+VITE_DEV_BACKEND_URL=https://your-production-api.example.com
+VITE_GOOGLE_CLIENT_ID=
 ```
 
-**Frontend** (`npm run build -w frontend`): outputs a `frontend/dist/` folder of static HTML/JS/CSS. Deploy that folder to any static host. Set `VITE_DEV_BACKEND_URL` to the backend's production URL before building.
+Use long random values for token and CSRF secrets. For example:
 
-**Backend** (`npm run build -w backend`): compiles TypeScript to `backend/dist/`. The host runs `node dist/index.js`. Set all four environment variables (`MONGODB_URL`, `PORT`, `JWT_SECRET`, `GOOGLE_CLIENT_ID`) as secrets on the host platform. The `shared/` package is resolved via the workspace symlink during build — it is not a separate deploy artifact.
+```bash
+openssl rand -hex 32
+```
 
-**`shared/`** is never deployed on its own. It only exists to satisfy the TypeScript compiler and has no runtime output (interfaces are erased at compile time).
-
----
+The backend validates Google access tokens by calling Google's userinfo endpoint. The frontend provides the Google client ID to `GoogleOAuthProvider`.
 
 ## Local Development
 
+1. Install dependencies from the repo root.
+
 ```bash
-# From repo root:
-npm install          # installs all workspaces + links @docs-collab/shared
-
-npm run dev          # starts both servers:
-                     #   backend  → http://localhost:5000
-                     #   frontend → http://localhost:5173
+npm install
 ```
 
-Commit messages must follow Conventional Commits or the pre-commit hook will reject them:
+2. Add the environment files shown above.
 
+3. Start both apps.
+
+```bash
+npm run dev
 ```
-feat: add google sign in
-fix: handle duplicate email on register
-chore: update dependencies
+
+Default local URLs:
+
+| Service      | URL                            |
+| ------------ | ------------------------------ |
+| Frontend     | `http://localhost:5173`        |
+| Backend      | `http://localhost:5000`        |
+| Health check | `http://localhost:5000/health` |
+
+The Vite server is configured with `strictPort: true`, so it fails if port `5173` is already in use.
+
+## API Overview
+
+All REST endpoints are mounted under `/api/v1`.
+
+Auth routes:
+
+| Method | Path               | Purpose                                                         |
+| ------ | ------------------ | --------------------------------------------------------------- |
+| `GET`  | `/auth/csrf-token` | Creates/uses a session id cookie and returns a CSRF token       |
+| `GET`  | `/auth/me`         | Returns the current user from the access cookie                 |
+| `POST` | `/auth/register`   | Creates a local account and issues cookies                      |
+| `POST` | `/auth/login`      | Signs in a local account and issues cookies                     |
+| `POST` | `/auth/google`     | Signs in or creates a Google account from a Google access token |
+| `POST` | `/auth/logout`     | Deletes the current refresh session and clears cookies          |
+| `POST` | `/auth/refresh`    | Rotates refresh/access tokens                                   |
+
+Document routes:
+
+| Method   | Path                      | Purpose                                             |
+| -------- | ------------------------- | --------------------------------------------------- |
+| `POST`   | `/docs`                   | Create a document                                   |
+| `GET`    | `/docs`                   | List owned and shared documents                     |
+| `GET`    | `/docs/:id`               | Fetch document metadata and current user permission |
+| `DELETE` | `/docs/:id`               | Delete a document, owner only                       |
+| `PATCH`  | `/docs/:id/title`         | Rename a document, owner or write collaborator      |
+| `POST`   | `/docs/:id/share`         | Share with a registered user by email, owner only   |
+| `DELETE` | `/docs/:id/share/:userId` | Remove collaborator access, owner only              |
+| `PATCH`  | `/docs/:id/public-access` | Update public link access, owner only               |
+
+Mutating requests need the `x-csrf-token` header. The frontend Axios layer fetches and attaches this automatically.
+
+## Collaboration Flow
+
+The document body is not sent through normal REST updates. REST stores document metadata; the editor body flows through Yjs and Socket.io.
+
+1. The editor route loads document metadata with `GET /docs/:id`.
+2. `useCollaboration` hydrates a local `Y.Doc` from IndexedDB.
+3. The client opens a credentialed Socket.io connection and emits `join-doc`.
+4. The server verifies the `accessToken` cookie and checks document access.
+5. The server loads the persisted Yjs state from MongoDB when needed.
+6. The joining client receives `doc-state`.
+7. Local edits emit `doc-update`; the server applies, broadcasts, and debounces persistence.
+8. Awareness updates carry cursors, selections, and pointer positions without being persisted.
+
+The server limits update payload sizes and only accepts document or awareness updates from sockets that have joined the target room.
+
+## Build and Deployment
+
+Build everything from the root:
+
+```bash
+npm run build
 ```
+
+This runs:
+
+- `npm run build -w frontend`: TypeScript build plus Vite build into `frontend/dist/`
+- `npm run build -w backend`: TypeScript build into `backend/dist/`
+
+Deployment shape:
+
+- Deploy `frontend/dist/` to a static host such as Vercel, Netlify, or another CDN/static platform.
+- Deploy `backend/dist/` to a Node.js host such as Render, Railway, Fly.io, or a VM.
+- Set `FRONTEND_URL` on the backend to the deployed frontend origin.
+- Set `VITE_DEV_BACKEND_URL` before building the frontend so API and socket traffic target the deployed backend.
+- Use MongoDB Atlas or another MongoDB instance for `MONGODB_URL`.
+- `shared/` is consumed through npm workspaces and is not deployed by itself.
+
+## Notes for Contributors
+
+- Do not edit `frontend/src/routeTree.gen.ts` by hand; TanStack Router regenerates it.
+- Keep request/response validation in `shared/` when both frontend and backend depend on the shape.
+- Keep secrets in local env files or a secrets manager. Never put credential values in README examples.
+- The source currently uses some non-ASCII UI copy/icons in React files; new docs and config should stay ASCII unless there is a product reason otherwise.
