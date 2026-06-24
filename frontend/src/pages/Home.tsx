@@ -151,12 +151,14 @@ export const Home = () => {
         </div>
 
         {/* Trust pills */}
-        <div className="mt-10 flex flex-wrap items-center justify-center gap-4 text-xs text-gray-400 dark:text-gray-500">
-          <span>🔒 End-to-end access control</span>
+        <div className="mt-10 flex  flex-wrap items-center justify-center gap-4 text-xs text-gray-400 dark:text-gray-500">
+          <span className="text-center">🔒 End-to-end access control</span>
           <span className="hidden sm:inline">·</span>
           <span>⚡ Millisecond sync</span>
           <span className="hidden sm:inline">·</span>
-          <span>✦ No credit card required</span>
+          <span className="text-green-500 text-center">
+            💳 No credit card required
+          </span>
         </div>
       </section>
 

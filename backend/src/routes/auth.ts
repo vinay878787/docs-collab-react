@@ -6,7 +6,9 @@ import {
   googleSignInController,
   logoutController,
   refreshController,
+  meController,
 } from '../controllers/auth';
+import { verifyToken } from '../middlewares/verify-token';
 import { validate } from '../middlewares/validate';
 import {
   loginSchema,
@@ -33,6 +35,7 @@ router.get('/csrf-token', (req, res) => {
   res.json({ csrfToken: generateCsrfToken(req, res) });
 });
 
+router.get('/me', verifyToken, meController);
 router.post('/register', validate(registerSchema), registerController);
 router.post('/login', validate(loginSchema), loginController);
 router.post('/google', validate(googleSignInSchema), googleSignInController);

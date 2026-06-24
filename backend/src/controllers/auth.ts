@@ -190,6 +190,26 @@ export const logoutController = async (req: Request, res: Response) => {
   }
 };
 
+export const meController = async (req: Request, res: Response) => {
+  try {
+    const user = await User.findById(req.user!.id).select(
+      '_id username email avatar',
+    );
+    if (!user) return res.status(404).json({ message: 'User not found' });
+    res.json({
+      user: {
+        id: user._id,
+        username: user.username,
+        email: user.email,
+        avatar: user.avatar,
+      },
+    });
+  } catch (err) {
+    console.error('meController error:', err);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
 export const refreshController = async (req: Request, res: Response) => {
   try {
     const raw = req.cookies?.refreshToken;
