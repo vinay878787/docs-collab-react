@@ -1,13 +1,48 @@
 import { Request, Response } from 'express';
 import { hash, compare } from 'bcrypt-ts';
-import { signToken, sanitizeUsername } from '../utils/helper';
+import jwt, { JwtPayload } from 'jsonwebtoken';
+import {
+  signAccessToken,
+  signRefreshToken,
+  hashToken,
+  sanitizeUsername,
+} from '../utils/helper';
 import { User } from '../models/User';
+import { Session } from '../models/Session';
 
-const COOKIE_OPTIONS = {
+const isProd = process.env.NODE_ENV === 'production';
+
+const ACCESS_COOKIE = {
   httpOnly: true,
-  secure: process.env.NODE_ENV === 'production',
+  secure: isProd,
+  sameSite: 'lax' as const,
+  maxAge: 15 * 60 * 1000,
+};
+
+const REFRESH_COOKIE = {
+  httpOnly: true,
+  secure: isProd,
   sameSite: 'lax' as const,
   maxAge: 7 * 24 * 60 * 60 * 1000,
+  path: '/api/v1/auth/refresh',
+};
+
+const issueTokens = async (userId: string, req: Request, res: Response) => {
+  const accessToken = signAccessToken(userId);
+  const rawRefresh = signRefreshToken(userId);
+  const tokenHash = hashToken(rawRefresh);
+
+  const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+  await Session.create({
+    userId,
+    tokenHash,
+    expiresAt,
+    userAgent: req.headers['user-agent'] ?? '',
+    ipAddress: req.ip ?? '',
+  });
+
+  res.cookie('accessToken', accessToken, ACCESS_COOKIE);
+  res.cookie('refreshToken', rawRefresh, REFRESH_COOKIE);
 };
 
 export const registerController = async (req: Request, res: Response) => {
@@ -15,7 +50,6 @@ export const registerController = async (req: Request, res: Response) => {
     const { username, email, password } = req.body;
 
     const isUserExists = await User.findOne({ email: email.toLowerCase() });
-
     if (isUserExists) {
       return res
         .status(409)
@@ -23,7 +57,6 @@ export const registerController = async (req: Request, res: Response) => {
     }
 
     const hashedPassword = await hash(password, 10);
-
     const newUser = await User.create({
       username: sanitizeUsername(username),
       email: email.toLowerCase(),
@@ -31,8 +64,7 @@ export const registerController = async (req: Request, res: Response) => {
       provider: 'local',
     });
 
-    const token = signToken(String(newUser._id));
-    res.cookie('token', token, COOKIE_OPTIONS);
+    await issueTokens(String(newUser._id), req, res);
 
     return res.status(201).json({
       message: 'User registered successfully',
@@ -54,7 +86,6 @@ export const loginController = async (req: Request, res: Response) => {
     const { email, password } = req.body;
 
     const user = await User.findOne({ email: email.toLowerCase() });
-
     if (!user) {
       return res.status(401).json({ message: 'Invalid Credentials' });
     }
@@ -64,13 +95,11 @@ export const loginController = async (req: Request, res: Response) => {
     }
 
     const isPasswordCorrect = await compare(password, user.password!);
-
     if (!isPasswordCorrect) {
       return res.status(401).json({ message: 'Invalid Credentials' });
     }
 
-    const token = signToken(String(user._id));
-    res.cookie('token', token, COOKIE_OPTIONS);
+    await issueTokens(String(user._id), req, res);
 
     return res.status(200).json({
       message: 'User logged in successfully',
@@ -130,8 +159,7 @@ export const googleSignInController = async (req: Request, res: Response) => {
       });
     }
 
-    const token = signToken(String(user._id));
-    res.cookie('token', token, COOKIE_OPTIONS);
+    await issueTokens(String(user._id), req, res);
 
     return res.status(200).json({
       user: {
@@ -147,7 +175,53 @@ export const googleSignInController = async (req: Request, res: Response) => {
   }
 };
 
-export const logoutController = (_req: Request, res: Response) => {
-  res.clearCookie('token', COOKIE_OPTIONS);
-  return res.status(200).json({ message: 'Logged out successfully' });
+export const logoutController = async (req: Request, res: Response) => {
+  try {
+    const raw = req.cookies?.refreshToken;
+    if (raw) {
+      await Session.deleteOne({ tokenHash: hashToken(raw) });
+    }
+    res.clearCookie('accessToken', ACCESS_COOKIE);
+    res.clearCookie('refreshToken', REFRESH_COOKIE);
+    return res.status(200).json({ message: 'Logged out successfully' });
+  } catch (err) {
+    console.error('Error during logout:', err);
+    return res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
+export const refreshController = async (req: Request, res: Response) => {
+  try {
+    const raw = req.cookies?.refreshToken;
+    if (!raw) {
+      return res.status(401).json({ message: 'No refresh token' });
+    }
+
+    let payload: JwtPayload;
+    try {
+      payload = jwt.verify(
+        raw,
+        process.env.REFRESH_TOKEN_SECRET!,
+      ) as JwtPayload;
+    } catch {
+      return res.status(401).json({ message: 'Invalid refresh token' });
+    }
+
+    const tokenHash = hashToken(raw);
+    const session = await Session.findOne({ tokenHash });
+
+    if (!session) {
+      // Reuse detected — nuke all sessions for this user
+      await Session.deleteMany({ userId: payload.id });
+      return res.status(401).json({ message: 'Session revoked' });
+    }
+
+    await Session.deleteOne({ _id: session._id });
+    await issueTokens(String(payload.id), req, res);
+
+    return res.status(200).json({ message: 'Tokens refreshed' });
+  } catch (err) {
+    console.error('Error refreshing tokens:', err);
+    return res.status(500).json({ message: 'Internal server error' });
+  }
 };
