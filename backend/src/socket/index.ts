@@ -15,17 +15,6 @@ const docRooms = new Map<string, Y.Doc>();
 // new joiner sees nobody until an existing user happens to move.
 const docAwareness = new Map<string, Map<string, number[]>>();
 
-// Upper bounds for client→server socket payloads (in bytes, since each array
-// entry is one byte). Incremental Yjs edits are small; this just stops a
-// malicious or buggy client from flooding the server with giant buffers.
-const MAX_DOC_UPDATE_BYTES = 5_000_000; // ~5 MB (covers large pastes)
-const MAX_AWARENESS_BYTES = 100_000; // ~100 KB (cursor/pointer presence)
-
-// A byte array is a plain number[] within the allowed length.
-function isValidByteArray(value: unknown, maxLen: number): value is number[] {
-  return Array.isArray(value) && value.length > 0 && value.length <= maxLen;
-}
-
 // Debounced save timers — we batch rapid keystrokes into a single DB write.
 const saveTimers = new Map<string, ReturnType<typeof setTimeout>>();
 
@@ -101,7 +90,6 @@ export function initSocket(httpServer: http.Server) {
     // We verify access, then send the full current document state.
     socket.on('join-doc', async ({ docId }: { docId: string }) => {
       try {
-        if (typeof docId !== 'string') return;
         const record = await DocumentModel.findById(docId).lean();
         if (!record)
           return socket.emit('error', { message: 'Document not found' });
@@ -155,22 +143,11 @@ export function initSocket(httpServer: http.Server) {
     socket.on(
       'doc-update',
       ({ docId, update }: { docId: string; update: number[] }) => {
-        if (typeof docId !== 'string') return;
-        if (!isValidByteArray(update, MAX_DOC_UPDATE_BYTES)) return;
-
-        // Only apply/broadcast for a doc this socket has actually joined —
-        // otherwise a client could write into any room it knows the id of.
-        if (!socket.rooms.has(docId)) return;
-
         const ydoc = docRooms.get(docId);
         if (!ydoc) return;
 
-        try {
-          // 'remote' origin prevents the server re-broadcasting its own apply
-          Y.applyUpdate(ydoc, new Uint8Array(update), 'remote');
-        } catch {
-          return; // ignore malformed updates rather than crash the room
-        }
+        // 'remote' origin prevents the server from re-broadcasting its own apply
+        Y.applyUpdate(ydoc, new Uint8Array(update), 'remote');
         socket.to(docId).emit('doc-update', { update });
         schedulePersist(docId, ydoc);
       },
@@ -180,11 +157,6 @@ export function initSocket(httpServer: http.Server) {
     socket.on(
       'awareness-update',
       ({ docId, awareness }: { docId: string; awareness: number[] }) => {
-        if (typeof docId !== 'string') return;
-        if (!isValidByteArray(awareness, MAX_AWARENESS_BYTES)) return;
-        // Presence only matters for a room the socket has joined.
-        if (!socket.rooms.has(docId)) return;
-
         let roomAwareness = docAwareness.get(docId);
         if (!roomAwareness) {
           roomAwareness = new Map();

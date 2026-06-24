@@ -22,20 +22,3 @@ export function userColor(seed: string): string {
   }
   return CURSOR_COLORS[Math.abs(hash) % CURSOR_COLORS.length];
 }
-
-// Collaborator presence (name/colour) arrives over Yjs awareness, which the
-// server relays verbatim — so a malicious peer can set arbitrary values. Names
-// are safe (rendered as text/escaped), but colours get interpolated into raw
-// `style` attribute strings, so validate them to a plain hex colour to prevent
-// CSS injection. Anything else falls back to a neutral grey.
-const HEX_COLOR = /^#[0-9a-fA-F]{3,8}$/;
-
-export function safeColor(input: unknown): string {
-  return typeof input === 'string' && HEX_COLOR.test(input) ? input : '#888888';
-}
-
-export function safeName(input: unknown): string {
-  if (typeof input !== 'string') return 'Anonymous';
-  const trimmed = input.trim();
-  return trimmed ? trimmed.slice(0, 40) : 'Anonymous';
-}
