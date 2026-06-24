@@ -1,19 +1,127 @@
+import { useEffect, useRef, useState } from 'react';
+import { useNavigate } from '@tanstack/react-router';
+import * as Y from 'yjs';
+import { IndexeddbPersistence } from 'y-indexeddb';
 import { Route } from '@/routes/docs/$docId';
+import { TiptapEditor } from '@/components/editor/TiptapEditor';
+import { Navbar } from '@/components/Navbar';
+import { getDoc, patchDocTitle } from '@/api/docs';
+import { useAuth } from '@/context/AuthContext';
+import type { DocListItem } from '@/api/docs';
 
-// Placeholder — Milestone 4 will replace this with the full Tiptap + YJS editor.
+function useDebounce<T>(value: T, delay: number): T {
+  const [debounced, setDebounced] = useState(value);
+  useEffect(() => {
+    const timer = setTimeout(() => setDebounced(value), delay);
+    return () => clearTimeout(timer);
+  }, [value, delay]);
+  return debounced;
+}
+
 export const DocEditor = () => {
   const { docId } = Route.useParams();
+  const { user, isResolving } = useAuth();
+  const navigate = useNavigate();
+
+  const ydoc = useRef(new Y.Doc()).current;
+  const [synced, setSynced] = useState(false);
+  const [doc, setDoc] = useState<DocListItem | null>(null);
+  const [title, setTitle] = useState('');
+
+  const debouncedTitle = useDebounce(title, 1000);
+  const serverTitle = useRef('');
+  const isTitleInitialized = useRef(false);
+
+  // Auth guard
+  useEffect(() => {
+    if (!isResolving && !user) navigate({ to: '/login' });
+  }, [isResolving, user, navigate]);
+
+  // IndexedDB persistence — hydrates Y.Doc offline-first
+  useEffect(() => {
+    const persistence = new IndexeddbPersistence(`doc-${docId}`, ydoc);
+    persistence.on('synced', () => setSynced(true));
+    return () => {
+      persistence.destroy();
+    };
+  }, [docId, ydoc]);
+
+  // Fetch doc metadata
+  useEffect(() => {
+    getDoc(docId)
+      .then(({ doc: fetched }) => {
+        setDoc(fetched);
+        setTitle(fetched.title);
+        serverTitle.current = fetched.title;
+        isTitleInitialized.current = true;
+      })
+      .catch(() => {});
+  }, [docId]);
+
+  // Debounced title auto-save
+  useEffect(() => {
+    if (!isTitleInitialized.current || debouncedTitle === serverTitle.current)
+      return;
+    patchDocTitle(docId, debouncedTitle)
+      .then(() => {
+        serverTitle.current = debouncedTitle;
+      })
+      .catch(() => {});
+  }, [docId, debouncedTitle]);
+
+  const isOwner = doc ? doc.owner._id === user?.id : false;
+  const canEdit =
+    !doc ||
+    isOwner ||
+    doc.collaborators.some(
+      (c) => c.user._id === user?.id && c.permission === 'write',
+    );
+
+  if (isResolving || !synced) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-white dark:bg-gray-950">
+        <div className="flex gap-2">
+          {[0, 1, 2].map((i) => (
+            <div
+              key={i}
+              className="h-2.5 w-2.5 animate-bounce rounded-full bg-blue-500"
+              style={{ animationDelay: `${i * 0.15}s` }}
+            />
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100">
-      <div className="text-center">
-        <p className="text-sm text-gray-400 dark:text-gray-500">
-          Document ID: {docId}
-        </p>
-        <p className="mt-2 text-lg font-semibold">
-          Editor coming in Milestone 4
-        </p>
+    <div className="min-h-screen bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100 print:bg-white">
+      <div className="print:hidden">
+        <Navbar />
       </div>
+
+      <TiptapEditor
+        ydoc={ydoc}
+        editable={canEdit}
+        header={
+          <div className="mb-8">
+            <input
+              type="text"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="Untitled"
+              readOnly={!canEdit}
+              className="w-full bg-transparent text-4xl font-bold text-gray-900 dark:text-gray-100 placeholder-gray-300 dark:placeholder-gray-700 focus:outline-none"
+            />
+            {doc && (
+              <p className="mt-2 text-xs text-gray-400 dark:text-gray-500">
+                {doc.owner.username}
+                {isOwner ? ' · Owner' : ' · Shared with you'}
+              </p>
+            )}
+            <hr className="mt-6 border-gray-100 dark:border-gray-800" />
+          </div>
+        }
+      />
     </div>
   );
 };

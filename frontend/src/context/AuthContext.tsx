@@ -12,6 +12,7 @@ type AuthContextValue = {
   user: AuthUser | null;
   setUser: (user: AuthUser | null) => void;
   isResolving: boolean;
+  logout: () => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -32,8 +33,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       .finally(() => setIsResolving(false));
   }, []);
 
+  const logout = async () => {
+    await api.post('/logout').catch(() => {});
+    setUser(null);
+    window.location.href = '/';
+  };
+
   return (
-    <AuthContext.Provider value={{ user, setUser, isResolving }}>
+    <AuthContext.Provider value={{ user, setUser, isResolving, logout }}>
       {children}
     </AuthContext.Provider>
   );

@@ -1,13 +1,14 @@
 import CodeIcon from '@mui/icons-material/Code';
 import DarkModeOutlinedIcon from '@mui/icons-material/DarkModeOutlined';
 import LightModeOutlinedIcon from '@mui/icons-material/LightModeOutlined';
+import LogoutOutlinedIcon from '@mui/icons-material/LogoutOutlined';
 import { Link } from '@tanstack/react-router';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 
 export const Navbar = () => {
   const { isDark, toggleTheme } = useTheme();
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
 
   return (
     <nav className="sticky top-0 z-50 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-950 transition-colors">
@@ -37,12 +38,22 @@ export const Navbar = () => {
           </button>
 
           {user ? (
-            <Link
-              to="/dashboard"
-              className="flex h-8 items-center rounded bg-blue-600 dark:bg-blue-500 px-3 text-sm font-medium text-white hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors no-underline"
-            >
-              Dashboard
-            </Link>
+            <>
+              <Link
+                to="/dashboard"
+                className="flex h-8 items-center rounded border border-gray-300 dark:border-gray-700 px-3 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors no-underline"
+              >
+                Dashboard
+              </Link>
+              <button
+                onClick={() => void logout()}
+                className="flex h-8 items-center gap-1.5 rounded bg-gray-900 dark:bg-gray-100 px-3 text-sm font-medium text-white dark:text-gray-900 hover:bg-gray-700 dark:hover:bg-gray-300 transition-colors"
+                title="Sign out"
+              >
+                <LogoutOutlinedIcon style={{ fontSize: 15 }} />
+                Sign out
+              </button>
+            </>
           ) : (
             <>
               <Link

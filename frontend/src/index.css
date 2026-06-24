@@ -1,6 +1,202 @@
 @import 'tailwindcss';
+@import 'highlight.js/styles/atom-one-dark.css';
 
 @variant dark (&:where(.dark, .dark *));
+
+/* ── Tiptap / ProseMirror editor styles ─────────────────────────────────── */
+.ProseMirror {
+  min-height: calc(100vh - 220px);
+  outline: none;
+}
+
+.ProseMirror h1 {
+  font-size: 2rem;
+  font-weight: 700;
+  line-height: 1.25;
+  margin-bottom: 0.75rem;
+  margin-top: 1.5rem;
+}
+
+.ProseMirror h2 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  line-height: 1.3;
+  margin-bottom: 0.5rem;
+  margin-top: 1.25rem;
+}
+
+.ProseMirror h3 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  margin-top: 1rem;
+}
+
+.ProseMirror p {
+  line-height: 1.75;
+  margin-bottom: 0.75rem;
+}
+
+.ProseMirror p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  color: #9ca3af;
+  float: left;
+  pointer-events: none;
+  height: 0;
+}
+
+.ProseMirror strong {
+  font-weight: 600;
+}
+.ProseMirror em {
+  font-style: italic;
+}
+
+.ProseMirror code:not(pre code) {
+  background: #f3f4f6;
+  color: #db2777;
+  border-radius: 4px;
+  padding: 1px 5px;
+  font-size: 0.875em;
+  font-family: ui-monospace, 'Cascadia Code', 'Source Code Pro', monospace;
+}
+
+.dark .ProseMirror code:not(pre code) {
+  background: #1f2937;
+  color: #f472b6;
+}
+
+.ProseMirror pre {
+  border-radius: 0.5rem;
+  margin-bottom: 1rem;
+  overflow-x: auto;
+}
+
+/* highlight.js atom-one-dark already styles pre > code — just ensure width */
+.ProseMirror pre code.hljs {
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  line-height: 1.6;
+}
+
+.ProseMirror ul {
+  list-style-type: disc;
+  padding-left: 1.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.ProseMirror ol {
+  list-style-type: decimal;
+  padding-left: 1.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.ProseMirror li {
+  line-height: 1.75;
+  margin-bottom: 0.25rem;
+}
+
+.ProseMirror blockquote {
+  border-left: 3px solid #e5e7eb;
+  padding-left: 1rem;
+  color: #6b7280;
+  font-style: italic;
+  margin-bottom: 0.75rem;
+}
+
+.dark .ProseMirror blockquote {
+  border-left-color: #374151;
+  color: #9ca3af;
+}
+
+.ProseMirror hr {
+  border-top: 1px solid #e5e7eb;
+  margin: 1.5rem 0;
+}
+
+.dark .ProseMirror hr {
+  border-top-color: #374151;
+}
+
+/* ── Page-break node ─────────────────────────────────────────────────────── */
+.page-break-node {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 1.5rem 0;
+  color: #9ca3af;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  user-select: none;
+  cursor: default;
+}
+
+.page-break-node::before {
+  content: '';
+  flex: 1;
+  border-top: 1.5px dashed #d1d5db;
+}
+
+.page-break-node::after {
+  content: '— page break —';
+  white-space: nowrap;
+  padding-right: 0.5rem;
+}
+
+.dark .page-break-node::before {
+  border-top-color: #4b5563;
+}
+
+/* ── Print styles ────────────────────────────────────────────────────────── */
+@media print {
+  /* Hide all UI chrome */
+  .editor-toolbar,
+  nav {
+    display: none !important;
+  }
+
+  /* Let the paper fill the physical page */
+  .editor-print-area {
+    background: transparent !important;
+    padding: 0 !important;
+  }
+
+  .editor-paper {
+    width: 100% !important;
+    min-height: auto !important;
+    box-shadow: none !important;
+    margin: 0 !important;
+  }
+
+  /* Page-break nodes become actual print page breaks */
+  .page-break-node {
+    display: block;
+    page-break-before: always;
+    break-before: page;
+    border: none;
+    margin: 0;
+    height: 0;
+  }
+
+  .page-break-node::before,
+  .page-break-node::after {
+    display: none;
+  }
+
+  /* Code blocks shouldn't split across pages */
+  pre {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+
+  @page {
+    size: Letter;
+    margin: 1in;
+  }
+}
+
 /* Chrome, Safari, Edge, Opera */
 input[type='number']::-webkit-outer-spin-button,
 input[type='number']::-webkit-inner-spin-button {
