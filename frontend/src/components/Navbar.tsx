@@ -5,6 +5,7 @@ import LogoutOutlinedIcon from '@mui/icons-material/LogoutOutlined';
 import { Link } from '@tanstack/react-router';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
+import { InstallButton } from './InstallButton';
 
 export const Navbar = () => {
   const { isDark, toggleTheme } = useTheme();
@@ -25,6 +26,8 @@ export const Navbar = () => {
         </Link>
 
         <div className="flex items-center gap-2">
+          <InstallButton />
+
           <button
             onClick={toggleTheme}
             className="flex h-8 w-8 items-center justify-center rounded text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
