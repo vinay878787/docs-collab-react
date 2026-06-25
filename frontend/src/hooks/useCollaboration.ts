@@ -13,7 +13,11 @@ interface Options {
 export function useCollaboration({ docId, user }: Options) {
   const ydoc = useRef(new Y.Doc()).current;
   const [synced, setSynced] = useState(false);
-  const providerRef = useRef<SocketIOYjsProvider | null>(null);
+  // State (not a ref): the editor must re-render once the provider exists so the
+  // CollaborationCursor extension — built once inside useEditor — is created with
+  // a real provider. A ref wouldn't trigger that re-render, so the inline caret
+  // extension would silently never be added.
+  const [provider, setProvider] = useState<SocketIOYjsProvider | null>(null);
 
   // IndexedDB — hydrates the Y.Doc from the local cache so the editor shows
   // content immediately while the server's doc-state is still in flight.
@@ -32,19 +36,19 @@ export function useCollaboration({ docId, user }: Options) {
 
     socket.connect();
 
-    const provider = new SocketIOYjsProvider(docId, ydoc, socket);
-    providerRef.current = provider;
+    const created = new SocketIOYjsProvider(docId, ydoc, socket);
+    setProvider(created);
 
     // The CollaborationCursor extension advertises this user (name + colour)
     // into awareness; see TiptapEditor. Keeping it in one place avoids the two
     // sources fighting over the awareness 'user' field.
 
     return () => {
-      provider.destroy();
+      created.destroy();
       socket.disconnect();
-      providerRef.current = null;
+      setProvider(null);
     };
   }, [docId, ydoc, user]);
 
-  return { ydoc, synced, providerRef };
+  return { ydoc, synced, provider };
 }

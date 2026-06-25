@@ -14,9 +14,22 @@ import FormatListNumberedOutlinedIcon from '@mui/icons-material/FormatListNumber
 import FormatQuoteOutlinedIcon from '@mui/icons-material/FormatQuoteOutlined';
 import FormatStrikethroughOutlinedIcon from '@mui/icons-material/FormatStrikethroughOutlined';
 import FormatUnderlinedOutlinedIcon from '@mui/icons-material/FormatUnderlinedOutlined';
+import FormatColorTextOutlinedIcon from '@mui/icons-material/FormatColorTextOutlined';
+import BorderColorOutlinedIcon from '@mui/icons-material/BorderColorOutlined';
 import InsertPageBreakOutlinedIcon from '@mui/icons-material/InsertPageBreakOutlined';
 import PrintOutlinedIcon from '@mui/icons-material/PrintOutlined';
 import { formatCode } from '@/lib/formatCode';
+
+const FONT_FAMILIES = [
+  { label: 'Default', value: '' },
+  { label: 'Sans', value: 'Inter, ui-sans-serif, system-ui, sans-serif' },
+  { label: 'Serif', value: 'Georgia, Cambria, "Times New Roman", serif' },
+  { label: 'Mono', value: 'ui-monospace, "Courier New", monospace' },
+  { label: 'Arial', value: 'Arial, Helvetica, sans-serif' },
+  { label: 'Times', value: '"Times New Roman", Times, serif' },
+];
+
+const FONT_SIZES = ['', '12', '14', '16', '18', '24', '30', '36'];
 
 function Sep() {
   return (
@@ -53,6 +66,78 @@ function Btn({
     >
       {children}
     </button>
+  );
+}
+
+function ToolSelect({
+  value,
+  onChange,
+  title,
+  width,
+  children,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  title: string;
+  width: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <select
+      title={title}
+      value={value}
+      // mousedown inside a <select> shouldn't steal/clear the editor selection
+      onMouseDown={(e) => e.stopPropagation()}
+      onChange={(e) => onChange(e.target.value)}
+      className={`h-7 ${width} shrink-0 rounded border border-gray-200 dark:border-gray-700 bg-transparent px-1 text-xs text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 focus:outline-none`}
+    >
+      {children}
+    </select>
+  );
+}
+
+function ColorControl({
+  title,
+  value,
+  onChange,
+  onClear,
+  children,
+}: {
+  title: string;
+  value: string;
+  onChange: (v: string) => void;
+  onClear: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="relative flex h-7 items-center">
+      <label
+        title={title}
+        className="flex h-7 min-w-7 cursor-pointer flex-col items-center justify-center rounded px-1 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"
+      >
+        {children}
+        <span
+          className="mt-[1px] h-1 w-4 rounded-sm"
+          style={{ backgroundColor: value || 'transparent' }}
+        />
+        <input
+          type="color"
+          value={value || '#000000'}
+          onChange={(e) => onChange(e.target.value)}
+          className="absolute inset-0 cursor-pointer opacity-0"
+        />
+      </label>
+      <button
+        onMouseDown={(e) => {
+          e.preventDefault();
+          onClear();
+        }}
+        title={`${title} — clear`}
+        className="ml-[-2px] flex h-4 w-3 items-center justify-center text-[10px] leading-none text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+      >
+        ✕
+      </button>
+    </div>
   );
 }
 
@@ -173,6 +258,63 @@ export function EditorToolbar({ editor }: { editor: Editor | null }) {
         >
           <FormatStrikethroughOutlinedIcon style={{ fontSize: 17 }} />
         </Btn>
+
+        <Sep />
+
+        {/* Font family / size + colours */}
+        <ToolSelect
+          title="Font family"
+          width="w-20"
+          value={(editor.getAttributes('textStyle').fontFamily as string) ?? ''}
+          onChange={(v) =>
+            v
+              ? editor.chain().focus().setFontFamily(v).run()
+              : editor.chain().focus().unsetFontFamily().run()
+          }
+        >
+          {FONT_FAMILIES.map((f) => (
+            <option key={f.label} value={f.value}>
+              {f.label}
+            </option>
+          ))}
+        </ToolSelect>
+        <ToolSelect
+          title="Font size"
+          width="w-14"
+          value={(
+            (editor.getAttributes('textStyle').fontSize as string) ?? ''
+          ).replace('px', '')}
+          onChange={(v) =>
+            v
+              ? editor.chain().focus().setFontSize(`${v}px`).run()
+              : editor.chain().focus().unsetFontSize().run()
+          }
+        >
+          {FONT_SIZES.map((s) => (
+            <option key={s} value={s}>
+              {s === '' ? 'Size' : s}
+            </option>
+          ))}
+        </ToolSelect>
+
+        <ColorControl
+          title="Text colour"
+          value={(editor.getAttributes('textStyle').color as string) ?? ''}
+          onChange={(v) => editor.chain().focus().setColor(v).run()}
+          onClear={() => editor.chain().focus().unsetColor().run()}
+        >
+          <FormatColorTextOutlinedIcon style={{ fontSize: 16 }} />
+        </ColorControl>
+        <ColorControl
+          title="Highlight"
+          value={(editor.getAttributes('highlight').color as string) ?? ''}
+          onChange={(v) =>
+            editor.chain().focus().setHighlight({ color: v }).run()
+          }
+          onClear={() => editor.chain().focus().unsetHighlight().run()}
+        >
+          <BorderColorOutlinedIcon style={{ fontSize: 16 }} />
+        </ColorControl>
 
         <Sep />
 

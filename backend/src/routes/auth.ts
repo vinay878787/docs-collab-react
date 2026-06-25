@@ -10,6 +10,7 @@ import {
 } from '../controllers/auth';
 import { verifyToken } from '../middlewares/verify-token';
 import { validate } from '../middlewares/validate';
+import { authLimiter } from '../middlewares/rate-limit';
 import {
   loginSchema,
   registerSchema,
@@ -19,9 +20,13 @@ import { generateCsrfToken } from '../csrf';
 
 const router = Router();
 
+const isProd = process.env.NODE_ENV === 'production';
+
 const SID_COOKIE = {
-  sameSite: 'lax' as const,
-  secure: process.env.NODE_ENV === 'production',
+  // Read only server-side (CSRF session binding), so it can be httpOnly too.
+  httpOnly: true,
+  sameSite: isProd ? ('none' as const) : ('lax' as const),
+  secure: isProd,
   path: '/',
 };
 
@@ -36,10 +41,21 @@ router.get('/csrf-token', (req, res) => {
 });
 
 router.get('/me', verifyToken, meController);
-router.post('/register', validate(registerSchema), registerController);
-router.post('/login', validate(loginSchema), loginController);
-router.post('/google', validate(googleSignInSchema), googleSignInController);
+// authLimiter throttles credential endpoints to blunt brute-force / stuffing.
+router.post(
+  '/register',
+  authLimiter,
+  validate(registerSchema),
+  registerController,
+);
+router.post('/login', authLimiter, validate(loginSchema), loginController);
+router.post(
+  '/google',
+  authLimiter,
+  validate(googleSignInSchema),
+  googleSignInController,
+);
 router.post('/logout', logoutController);
-router.post('/refresh', refreshController);
+router.post('/refresh', authLimiter, refreshController);
 
 export default router;

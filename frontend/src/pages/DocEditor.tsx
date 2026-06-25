@@ -36,7 +36,7 @@ export const DocEditor = () => {
   const isTitleInitialized = useRef(false);
 
   // Real-time collaboration: Y.Doc + IndexedDB offline cache + Socket.io sync
-  const { ydoc, synced, providerRef } = useCollaboration({ docId, user });
+  const { ydoc, synced, provider } = useCollaboration({ docId, user });
 
   // Auth guard
   useEffect(() => {
@@ -72,7 +72,10 @@ export const DocEditor = () => {
   // While doc is still loading (null), default to read-only for safety.
   const canEdit = doc === null ? false : userPermission === 'write';
 
-  if (isResolving || !synced) {
+  // Wait for the provider too: the editor is created once, and CollaborationCursor
+  // is only added when a provider is present at that moment. Mounting before the
+  // provider exists permanently omits the inline remote carets.
+  if (isResolving || !synced || !provider) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-white dark:bg-gray-950">
         <div className="flex gap-2">
@@ -97,7 +100,7 @@ export const DocEditor = () => {
       <TiptapEditor
         ydoc={ydoc}
         editable={canEdit}
-        provider={providerRef.current}
+        provider={provider}
         user={user}
         header={
           <div className="mb-8">

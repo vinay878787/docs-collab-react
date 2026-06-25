@@ -6,6 +6,11 @@ import Collaboration from '@tiptap/extension-collaboration';
 import CollaborationCursor from '@tiptap/extension-collaboration-cursor';
 import Underline from '@tiptap/extension-underline';
 import TextAlign from '@tiptap/extension-text-align';
+import TextStyle from '@tiptap/extension-text-style';
+import Color from '@tiptap/extension-color';
+import FontFamily from '@tiptap/extension-font-family';
+import Highlight from '@tiptap/extension-highlight';
+import { FontSize } from './extensions/fontSize';
 import { CodeBlockLowlight } from '@tiptap/extension-code-block-lowlight';
 import { createLowlight, common } from 'lowlight';
 import type * as Y from 'yjs';
@@ -103,6 +108,14 @@ export function TiptapEditor({
         : []),
       CodeBlockLowlight.configure({ lowlight }),
       Underline,
+      // TextStyle backs Color / FontFamily / FontSize (they all attach inline
+      // styles to a <span> textStyle mark). multicolor lets each highlight pick
+      // its own colour.
+      TextStyle,
+      Color,
+      FontFamily,
+      FontSize,
+      Highlight.configure({ multicolor: true }),
       TextAlign.configure({ types: ['heading', 'paragraph'] }),
       PageBreak,
       Pagination.configure({ onPagesChange: setNumPages }),

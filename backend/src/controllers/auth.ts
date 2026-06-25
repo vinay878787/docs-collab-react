@@ -12,17 +12,24 @@ import { Session } from '../models/Session';
 
 const isProd = process.env.NODE_ENV === 'production';
 
+// The frontend (Vercel) and API (its own HTTPS domain) are different origins in
+// production, so cookies must be SameSite=None + Secure to be sent on cross-site
+// requests. SameSite=None is only valid alongside Secure, so both flip together.
+// Locally (same-site http://localhost) Lax without Secure keeps dev working.
+const crossSite = {
+  sameSite: isProd ? ('none' as const) : ('lax' as const),
+  secure: isProd,
+};
+
 const ACCESS_COOKIE = {
   httpOnly: true,
-  secure: isProd,
-  sameSite: 'lax' as const,
+  ...crossSite,
   maxAge: 15 * 60 * 1000,
 };
 
 const REFRESH_COOKIE = {
   httpOnly: true,
-  secure: isProd,
-  sameSite: 'lax' as const,
+  ...crossSite,
   maxAge: 7 * 24 * 60 * 60 * 1000,
   path: '/api/v1/auth/refresh',
 };
@@ -119,6 +126,28 @@ export const loginController = async (req: Request, res: Response) => {
 export const googleSignInController = async (req: Request, res: Response) => {
   try {
     const { accessToken } = req.body;
+
+    // Verify the token was issued for THIS application before trusting it.
+    // Without checking `aud`, any Google access token (e.g. one minted for a
+    // different/malicious app the victim authorized) would let an attacker sign
+    // in as that victim. tokeninfo returns the client id the token belongs to.
+    const tokenInfoRes = await fetch(
+      `https://oauth2.googleapis.com/tokeninfo?access_token=${encodeURIComponent(
+        accessToken,
+      )}`,
+    );
+    if (!tokenInfoRes.ok) {
+      return res.status(401).json({ message: 'Invalid Google token' });
+    }
+    const tokenInfo = (await tokenInfoRes.json()) as { aud?: string };
+    if (
+      !process.env.GOOGLE_CLIENT_ID ||
+      tokenInfo.aud !== process.env.GOOGLE_CLIENT_ID
+    ) {
+      return res
+        .status(401)
+        .json({ message: 'Google token was not issued for this application' });
+    }
 
     const userInfoRes = await fetch(
       'https://www.googleapis.com/oauth2/v3/userinfo',

@@ -7,6 +7,7 @@ import authRouter from './routes/auth';
 import docsRouter from './routes/docs';
 import { errorHandler } from './middlewares/error-handler';
 import { doubleCsrfProtection } from './csrf';
+import { globalLimiter } from './middlewares/rate-limit';
 import { initSocket } from './socket';
 
 if (!process.env.ACCESS_TOKEN_SECRET) {
@@ -21,6 +22,10 @@ if (!process.env.CSRF_SECRET) {
 
 const app = express();
 
+// Behind a TLS-terminating reverse proxy (duckdns/HTTPS -> Express over HTTP).
+// Trust the first proxy hop so req.ip / req.protocol reflect the real client.
+app.set('trust proxy', 1);
+
 const corsOptions = {
   origin: process.env.FRONTEND_URL ?? 'http://localhost:5173',
   credentials: true,
@@ -29,6 +34,7 @@ const corsOptions = {
 
 app.disable('x-powered-by');
 app.use(cors(corsOptions));
+app.use(globalLimiter); // broad anti-flood cap across the whole API
 app.use(cookieParser());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));

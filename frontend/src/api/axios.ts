@@ -12,15 +12,16 @@ declare module 'axios' {
   }
 }
 
+const BACKEND_URL = import.meta.env.VITE_DEV_BACKEND_URL;
 const isDev = import.meta.env.DEV;
 
 const AUTH_BASE_URL = isDev
   ? 'http://localhost:5000/api/v1/auth'
-  : '/api/v1/auth';
+  : `${BACKEND_URL}/api/v1/auth`;
 
 const DOCS_BASE_URL = isDev
   ? 'http://localhost:5000/api/v1/docs'
-  : '/api/v1/docs';
+  : `${BACKEND_URL}/api/v1/docs`;
 
 // --- CSRF singleton ---
 let csrfToken = '';

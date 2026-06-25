@@ -294,6 +294,27 @@ export const Home = () => {
           )}
         </div>
       </section>
+
+      {/* Footer */}
+      <footer className="border-t border-gray-200 dark:border-gray-800">
+        <div className="mx-auto max-w-5xl px-4 py-8 text-center">
+          <p className="text-sm text-gray-500 dark:text-gray-400">
+            Crafted with{' '}
+            <span aria-label="love" role="img">
+              ❤️
+            </span>{' '}
+            by{' '}
+            <a
+              href="https://www.linkedin.com/in/bhvinay"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-semibold text-blue-600 dark:text-blue-400 hover:underline"
+            >
+              Vinay
+            </a>
+          </p>
+        </div>
+      </footer>
     </div>
   );
 };
