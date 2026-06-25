@@ -20,13 +20,13 @@ import { generateCsrfToken } from '../csrf';
 
 const router = Router();
 
-const isProd = process.env.NODE_ENV === 'production';
+const isDev = process.env.NODE_ENV === 'development';
 
 const SID_COOKIE = {
   // Read only server-side (CSRF session binding), so it can be httpOnly too.
   httpOnly: true,
-  sameSite: isProd ? ('none' as const) : ('lax' as const),
-  secure: isProd,
+  sameSite: isDev ? ('lax' as const) : ('none' as const),
+  secure: !isDev,
   path: '/',
 };
 

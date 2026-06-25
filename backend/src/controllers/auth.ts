@@ -10,15 +10,15 @@ import {
 import { User } from '../models/User';
 import { Session } from '../models/Session';
 
-const isProd = process.env.NODE_ENV === 'production';
+const isDev = process.env.NODE_ENV === 'development';
 
 // The frontend (Vercel) and API (its own HTTPS domain) are different origins in
 // production, so cookies must be SameSite=None + Secure to be sent on cross-site
 // requests. SameSite=None is only valid alongside Secure, so both flip together.
 // Locally (same-site http://localhost) Lax without Secure keeps dev working.
 const crossSite = {
-  sameSite: isProd ? ('none' as const) : ('lax' as const),
-  secure: isProd,
+  sameSite: isDev ? ('lax' as const) : ('none' as const),
+  secure: !isDev,
 };
 
 const ACCESS_COOKIE = {
